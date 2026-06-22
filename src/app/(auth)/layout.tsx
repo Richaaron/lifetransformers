@@ -9,8 +9,24 @@ export default function AuthLayout({
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
       {/* Left pane: Branding */}
-      <div className="hidden lg:flex flex-col justify-between bg-brand-900 p-12 text-brand-50 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-brand opacity-20 pointer-events-none" />
+      <div className="hidden lg:flex flex-col justify-between p-12 text-brand-50 relative overflow-hidden" style={{
+        background: `
+          radial-gradient(circle at 30% 20%, rgba(234, 179, 8, 0.15) 0%, transparent 50%),
+          radial-gradient(circle at 70% 80%, rgba(147, 51, 234, 0.1) 0%, transparent 50%),
+          linear-gradient(135deg, #1a1033 0%, #0d0d18 50%, #13131f 100%)
+        `
+      }}>
+        {/* Decorative cross pattern */}
+        <div className="absolute inset-0 opacity-10" style={{
+          backgroundImage: `
+            repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(234, 179, 8, 0.3) 80px, rgba(234, 179, 8, 0.3) 81px),
+            repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(234, 179, 8, 0.3) 80px, rgba(234, 179, 8, 0.3) 81px)
+          `
+        }} />
+        {/* Holy light rays */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full pointer-events-none" style={{
+          background: 'conic-gradient(from 180deg at 50% 0%, transparent 0deg, rgba(234, 179, 8, 0.03) 10deg, transparent 20deg, transparent 40deg, rgba(147, 51, 234, 0.02) 50deg, transparent 60deg, transparent 80deg, rgba(234, 179, 8, 0.03) 90deg, transparent 100deg, transparent 120deg, rgba(99, 102, 241, 0.02) 130deg, transparent 140deg, transparent 160deg, rgba(234, 179, 8, 0.03) 170deg, transparent 180deg, transparent 200deg, rgba(147, 51, 234, 0.02) 210deg, transparent 220deg, transparent 240deg, rgba(234, 179, 8, 0.03) 250deg, transparent 260deg, transparent 280deg, rgba(99, 102, 241, 0.02) 290deg, transparent 300deg, transparent 320deg, rgba(234, 179, 8, 0.03) 330deg, transparent 340deg)'
+        }} />
         <div className="relative z-10">
           <Image
             src="/logo.png"

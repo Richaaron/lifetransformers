@@ -19,6 +19,85 @@
     font-family: 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    position: relative;
+    min-height: 100vh;
+  }
+
+  /* Religious-inspired background */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: -2;
+    background: 
+      /* Subtle cross pattern */
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 100px,
+        rgba(234, 179, 8, 0.015) 100px,
+        rgba(234, 179, 8, 0.015) 101px
+      ),
+      repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 100px,
+        rgba(234, 179, 8, 0.015) 100px,
+        rgba(234, 179, 8, 0.015) 101px
+      ),
+      /* Golden light rays from top */
+      radial-gradient(
+        ellipse at 50% -20%,
+        rgba(234, 179, 8, 0.08) 0%,
+        rgba(147, 51, 234, 0.04) 30%,
+        transparent 70%
+      ),
+      /* Deep purple divine glow */
+      radial-gradient(
+        ellipse at 80% 50%,
+        rgba(99, 102, 241, 0.05) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        ellipse at 20% 80%,
+        rgba(147, 51, 234, 0.04) 0%,
+        transparent 50%
+      ),
+      /* Base gradient */
+      linear-gradient(180deg, #0a0a14 0%, #080810 50%, #0d0d18 100%);
+  }
+
+  /* Floating light particles */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: 
+      radial-gradient(1px 1px at 10% 20%, rgba(234, 179, 8, 0.3), transparent),
+      radial-gradient(1px 1px at 30% 60%, rgba(147, 51, 234, 0.3), transparent),
+      radial-gradient(1px 1px at 50% 10%, rgba(234, 179, 8, 0.2), transparent),
+      radial-gradient(1px 1px at 70% 40%, rgba(99, 102, 241, 0.3), transparent),
+      radial-gradient(1px 1px at 90% 80%, rgba(234, 179, 8, 0.2), transparent),
+      radial-gradient(1px 1px at 15% 70%, rgba(147, 51, 234, 0.2), transparent),
+      radial-gradient(1px 1px at 85% 15%, rgba(234, 179, 8, 0.3), transparent),
+      radial-gradient(1.5px 1.5px at 45% 45%, rgba(234, 179, 8, 0.4), transparent),
+      radial-gradient(1px 1px at 65% 75%, rgba(99, 102, 241, 0.2), transparent),
+      radial-gradient(1px 1px at 25% 35%, rgba(147, 51, 234, 0.3), transparent);
+    animation: twinkle 8s ease-in-out infinite alternate;
+  }
+
+  @keyframes twinkle {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.7; }
   }
 
   ::selection {
@@ -36,11 +115,68 @@
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #1a1a2e;
+    background: linear-gradient(180deg, #eab308 0%, #a16207 100%);
     border-radius: 9999px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #22223b;
+    background: linear-gradient(180deg, #facc15 0%, #ca8a04 100%);
   }
+}
+
+/* Auth pages background enhancement */
+.auth-bg {
+  background: 
+    radial-gradient(
+      circle at 30% 30%,
+      rgba(234, 179, 8, 0.1) 0%,
+      transparent 40%
+    ),
+    radial-gradient(
+      circle at 70% 70%,
+      rgba(147, 51, 234, 0.08) 0%,
+      transparent 40%
+    ),
+    linear-gradient(135deg, #0a0a14 0%, #13131f 100%);
+}
+
+/* Divine glow effect for cards */
+.divine-glow {
+  position: relative;
+}
+
+.divine-glow::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    rgba(234, 179, 8, 0.2) 0%,
+    rgba(147, 51, 234, 0.1) 50%,
+    rgba(99, 102, 241, 0.2) 100%
+  );
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.divine-glow:hover::before {
+  opacity: 1;
+}
+
+/* Holy light animation */
+@keyframes holyLight {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.02);
+  }
+}
+
+.holy-light {
+  animation: holyLight 4s ease-in-out infinite;
 }
