@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Home, Users, MessageSquare, Search, Settings, LogOut, X, Trophy, User } from "lucide-react"
 import { logoutAction } from "@/lib/actions/auth"
+import { useEffect, useState } from "react"
+import { createClient } from "@/lib/supabase/client"
 
 interface MobileNavProps {
   isOpen: boolean
@@ -18,11 +20,22 @@ const navItems = [
   { name: "Groups", href: "/groups", icon: Users },
   { name: "Leaderboard", href: "/leaderboard", icon: Trophy },
   { name: "Search", href: "/search", icon: Search },
-  { name: "Profile", href: "/profile/edit", icon: User },
 ]
 
 export function MobileNav({ isOpen, onClose }: MobileNavProps) {
   const pathname = usePathname()
+  const [username, setUsername] = useState("")
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        supabase.from("profiles").select("username").eq("id", user.id).single().then(({ data }) => {
+          if (data) setUsername(data.username)
+        })
+      }
+    })
+  }, [])
 
   if (!isOpen) return null
 
@@ -63,6 +76,22 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
               </Link>
             )
           })}
+          
+          {username && (
+            <Link
+              href={`/profile/${username}`}
+              onClick={onClose}
+              className={cn(
+                "flex items-center gap-3 px-3 py-3 rounded-md text-base font-medium transition-colors",
+                pathname.startsWith("/profile")
+                  ? "bg-brand-500/10 text-brand-500"
+                  : "text-surface-200 hover:bg-surface-800 hover:text-white"
+              )}
+            >
+              <User className="w-5 h-5" />
+              Profile
+            </Link>
+          )}
         </nav>
 
         <div className="p-4 border-t border-surface-800 space-y-1">

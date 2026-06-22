@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Home, Users, MessageSquare, Bell, Search, Settings, LogOut, Trophy, User } from "lucide-react"
 import { logoutAction } from "@/lib/actions/auth"
+import { useEffect, useState } from "react"
+import { createClient } from "@/lib/supabase/client"
 
 const navItems = [
   { name: "Feed", href: "/feed", icon: Home },
@@ -14,11 +16,22 @@ const navItems = [
   { name: "Leaderboard", href: "/leaderboard", icon: Trophy },
   { name: "Notifications", href: "/notifications", icon: Bell },
   { name: "Search", href: "/search", icon: Search },
-  { name: "Profile", href: "/profile/edit", icon: User },
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
+  const [username, setUsername] = useState("")
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        supabase.from("profiles").select("username").eq("id", user.id).single().then(({ data }) => {
+          if (data) setUsername(data.username)
+        })
+      }
+    })
+  }, [])
 
   return (
     <aside className="w-64 border-r border-surface-800 bg-surface-950 flex flex-col h-full hidden md:flex">
@@ -47,6 +60,21 @@ export function Sidebar() {
             </Link>
           )
         })}
+        
+        {username && (
+          <Link
+            href={`/profile/${username}`}
+            className={cn(
+              "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+              pathname.startsWith("/profile")
+                ? "bg-brand-500/10 text-brand-500"
+                : "text-surface-200 hover:bg-surface-800 hover:text-white"
+            )}
+          >
+            <User className="w-5 h-5" />
+            Profile
+          </Link>
+        )}
       </nav>
 
       <div className="p-4 border-t border-surface-800 space-y-1">

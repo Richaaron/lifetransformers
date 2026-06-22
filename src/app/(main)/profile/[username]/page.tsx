@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { getInitials } from "@/lib/utils"
 import { LEVEL_NAMES, getXpProgress } from "@/lib/types"
-import { Star, Trophy, MessageSquare, Heart, Calendar, MapPin, Gamepad2, User } from "lucide-react"
+import { Star, Trophy, MessageSquare, Heart, Calendar, MapPin, Gamepad2, User, Pencil } from "lucide-react"
 import Link from "next/link"
 
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
@@ -19,6 +19,8 @@ export async function generateMetadata({ params }: { params: Promise<{ username:
 export default async function ProfilePage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = await params
   const supabase = await createClient()
+  
+  const { data: { user: currentUser } } = await supabase.auth.getUser()
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -29,6 +31,8 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   if (!profile) {
     notFound()
   }
+
+  const isOwnProfile = currentUser?.id === profile.id
 
   const { data: progress } = await supabase
     .from("user_progress")
@@ -76,7 +80,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
               <AvatarImage src={profile.avatar_url || ""} />
               <AvatarFallback className="text-2xl">{getInitials(profile.display_name)}</AvatarFallback>
             </Avatar>
-            <div className="text-center sm:text-left">
+            <div className="flex-1 text-center sm:text-left">
               <h1 className="text-2xl font-bold text-white">{profile.display_name}</h1>
               <p className="text-surface-400">@{profile.username}</p>
               <div className="flex items-center justify-center sm:justify-start gap-2 mt-2">
@@ -98,6 +102,15 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                 </span>
               </div>
             </div>
+            {isOwnProfile && (
+              <Link
+                href="/profile/edit"
+                className="flex items-center gap-2 px-4 py-2 bg-surface-800 hover:bg-surface-700 rounded-lg text-sm font-medium text-white transition-colors"
+              >
+                <Pencil className="w-4 h-4" />
+                Edit Profile
+              </Link>
+            )}
           </div>
         </CardContent>
       </Card>
