@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { useActionState } from "react"
 import { signupAction } from "@/lib/actions/auth"
 import { Button } from "@/components/ui/button"
@@ -8,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
 import Image from "next/image"
+import { Eye, EyeOff } from "lucide-react"
 import type { ActionResult } from "@/lib/types"
 
 const initialState: ActionResult = {
@@ -16,6 +18,7 @@ const initialState: ActionResult = {
 
 export function SignupForm() {
   const [state, formAction, isPending] = useActionState(signupAction, initialState)
+  const [showPassword, setShowPassword] = useState(false)
 
   return (
     <Card className="w-full">
@@ -70,14 +73,24 @@ export function SignupForm() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="new-password"
-              required
-              minLength={6}
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="new-password"
+                required
+                minLength={6}
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-surface-400 hover:text-white"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
             <p className="text-xs text-surface-400">Must be at least 6 characters.</p>
           </div>
           {state?.error && (

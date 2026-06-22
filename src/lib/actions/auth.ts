@@ -119,7 +119,7 @@ export async function signupAction(
   redirect("/check-email")
 }
 
-export async function resendConfirmationEmail(email: string): Promise<ActionResult> {
+export async function resendConfirmationEmail(email: string): Promise<ActionResult<{ message: string }>> {
   const supabase = await createClient()
   
   const { error } = await supabase.auth.resend({

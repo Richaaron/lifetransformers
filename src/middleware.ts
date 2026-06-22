@@ -35,7 +35,8 @@ export async function middleware(request: NextRequest) {
   const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/signup')
   const isInvitePage = pathname.startsWith('/invite/')
   const isConfirmPage = pathname.startsWith('/confirm') || pathname.startsWith('/check-email')
-  const isPublicPage = isAuthPage || isInvitePage || isConfirmPage
+  const isPasswordReset = pathname.startsWith('/forgot-password') || pathname.startsWith('/reset-password')
+  const isPublicPage = isAuthPage || isInvitePage || isConfirmPage || isPasswordReset
 
   // Redirect unauthenticated users to login
   if (!user && !isPublicPage) {
