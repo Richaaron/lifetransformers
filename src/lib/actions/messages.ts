@@ -56,12 +56,19 @@ export async function sendMessage(conversationId: string, content: string): Prom
 
   if (!content.trim()) return { error: "Message cannot be empty" }
 
+  const { containsCurseWords } = await import("@/lib/utils/word-filter")
+  let finalContent = content.trim()
+  const { hasCurse, filtered } = containsCurseWords(finalContent)
+  if (hasCurse) {
+    finalContent = filtered
+  }
+
   const { error } = await supabase
     .from('messages')
     .insert({
       conversation_id: conversationId,
       sender_id: user.id,
-      content: content.trim()
+      content: finalContent
     })
 
   if (error) return { error: error.message }

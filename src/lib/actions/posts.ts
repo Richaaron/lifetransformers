@@ -3,33 +3,52 @@
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { ActionResult } from "@/lib/types"
+import { containsCurseWords } from "@/lib/utils/word-filter"
 
 export async function createPost(prevState: ActionResult, formData: FormData): Promise<ActionResult> {
   const content = formData.get("content") as string
   const groupId = formData.get("groupId") as string | null
+  const mediaUrl = formData.get("mediaUrl") as string
+  const mediaType = formData.get("mediaType") as string
   
   if (!content || content.trim().length === 0) {
-    return { error: "Post content cannot be empty" }
+    if (!mediaUrl) {
+      return { error: "Post content cannot be empty" }
+    }
   }
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: "Unauthorized" }
 
-  // In a real app, handle image upload here
+  let finalContent = content?.trim() || ""
+  if (finalContent) {
+    const { hasCurse, filtered } = containsCurseWords(finalContent)
+    if (hasCurse) {
+      finalContent = filtered
+    }
+  }
+
+  const postData: Record<string, unknown> = {
+    author_id: user.id,
+    content: finalContent,
+    group_id: groupId || null,
+  }
+
+  if (mediaUrl) {
+    if (mediaType === "video") {
+      postData.video_url = mediaUrl
+    } else {
+      postData.image_url = mediaUrl
+    }
+  }
 
   const { error } = await supabase
     .from("posts")
-    .insert({
-      author_id: user.id,
-      content: content.trim(),
-      group_id: groupId || null,
-      // image_url: ...
-    })
+    .insert(postData)
 
   if (error) return { error: error.message }
 
-  // Award XP for creating a post
   await supabase.rpc("add_xp", {
     p_user_id: user.id,
     p_amount: 10,
@@ -118,12 +137,18 @@ export async function addComment(postId: string, content: string): Promise<Actio
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: "Unauthorized" }
 
+  let finalContent = content.trim()
+  const { hasCurse, filtered } = containsCurseWords(finalContent)
+  if (hasCurse) {
+    finalContent = filtered
+  }
+
   const { error } = await supabase
     .from("comments")
     .insert({
       post_id: postId,
       author_id: user.id,
-      content: content.trim(),
+      content: finalContent,
     })
 
   if (error) return { error: error.message }
