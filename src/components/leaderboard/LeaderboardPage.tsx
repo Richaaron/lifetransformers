@@ -16,10 +16,39 @@ interface LeaderboardPageProps {
   currentUserId: string
 }
 
+const STAR_COLORS: Record<number, string> = {
+  1: "#94a3b8",
+  2: "#d1d5db",
+  3: "#34d399",
+  4: "#38bdf8",
+  5: "#60a5fa",
+  6: "#a78bfa",
+  7: "#818cf8",
+  8: "#fb923c",
+  9: "#fb7185",
+  10: "#fbbf24",
+  11: "#e879f9",
+  12: "#67e8f9",
+}
+
+const NAME_COLORS: Record<number, string> = {
+  1: "#94a3b8",
+  2: "#d1d5db",
+  3: "#34d399",
+  4: "#38bdf8",
+  5: "#60a5fa",
+  6: "#a78bfa",
+  7: "#818cf8",
+  8: "#fb923c",
+  9: "#fb7185",
+  10: "#fbbf24",
+  11: "#e879f9",
+  12: "#67e8f9",
+}
+
 function LevelStars({ level, size = "sm" }: { level: number; size?: "sm" | "md" }) {
-  const starSize = size === "md" ? "w-5 h-5" : "w-4 h-4"
-  
-  // Stars based on level tier (like 2go)
+  const starSize = size === "md" ? 20 : 16
+
   let filledStars = 0
   if (level >= 10) filledStars = 5
   else if (level >= 8) filledStars = 4
@@ -28,47 +57,21 @@ function LevelStars({ level, size = "sm" }: { level: number; size?: "sm" | "md" 
   else if (level >= 2) filledStars = 1
   else filledStars = 1
 
-  // Modern premium star colors
-  const starColors: Record<number, string> = {
-    1: "text-slate-400",      // Silver - Follower
-    2: "text-gray-300",       // Platinum - Believer
-    3: "text-emerald-400",    // Emerald - Disciple
-    4: "text-sky-400",        // Sky - Witness
-    5: "text-blue-400",       // Blue - Minister
-    6: "text-purple-400",     // Purple - Elder
-    7: "text-indigo-400",     // Indigo - Deacon
-    8: "text-orange-400",     // Orange - Pastor
-    9: "text-rose-400",       // Rose - Bishop
-    10: "text-amber-400",     // Gold - Apostle
-    11: "text-fuchsia-400",   // Fuchsia - Prophet
-    12: "text-cyan-300",      // Diamond - Saint
-  }
-
-  const color = starColors[level] || "text-slate-400"
+  const color = STAR_COLORS[level] || "#94a3b8"
 
   return (
-    <div className="flex items-center gap-0.5">
+    <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
       {Array.from({ length: 5 }).map((_, i) => (
-        <Star 
-          key={i} 
-          className={`${starSize} ${i < filledStars ? `fill-current ${color}` : "text-surface-700"}`} 
+        <Star
+          key={i}
+          style={{
+            width: starSize,
+            height: starSize,
+            color: i < filledStars ? color : "#404040",
+            fill: i < filledStars ? color : "transparent",
+          }}
         />
       ))}
-    </div>
-  )
-}
-
-function LevelBadge({ level, showName = true }: { level: number; showName?: boolean }) {
-  const levelInfo = LEVEL_NAMES[level] || LEVEL_NAMES[1]
-
-  return (
-    <div className="flex items-center gap-1.5">
-      <LevelStars level={level} />
-      {showName && (
-        <span className={`text-xs font-semibold bg-gradient-to-r ${levelInfo.textGradient} bg-clip-text text-transparent`}>
-          {levelInfo.name}
-        </span>
-      )}
     </div>
   )
 }
@@ -96,6 +99,7 @@ export function LeaderboardPage({ leaderboard, currentUserId }: LeaderboardPageP
           const levelInfo = LEVEL_NAMES[entry.level] || LEVEL_NAMES[1]
           const xpProgress = getXpProgress(entry.xp, entry.level)
           const isCurrentUser = entry.user_id === currentUserId
+          const nameColor = NAME_COLORS[entry.level] || "#94a3b8"
 
           return (
             <div
@@ -117,12 +121,11 @@ export function LeaderboardPage({ leaderboard, currentUserId }: LeaderboardPageP
                 </Avatar>
                 <div className="min-w-0">
                   <p className="font-semibold text-white truncate">{entry.display_name}</p>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-xs font-bold bg-gradient-to-r ${levelInfo.textGradient} bg-clip-text text-transparent`}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>
+                    <LevelStars level={entry.level} />
+                    <span style={{ color: nameColor, fontSize: 12, fontWeight: 700 }}>
                       {levelInfo.name}
                     </span>
-                    <span className="text-surface-600">·</span>
-                    <LevelStars level={entry.level} />
                   </div>
                 </div>
               </Link>
@@ -130,7 +133,7 @@ export function LeaderboardPage({ leaderboard, currentUserId }: LeaderboardPageP
               <div className="text-right">
                 {showMetric === "xp" && (
                   <div className="space-y-1">
-                    <p className={`font-bold ${levelInfo.color}`}>{entry.xp.toLocaleString()} XP</p>
+                    <p className="font-bold text-white">{entry.xp.toLocaleString()} XP</p>
                     <Progress value={xpProgress} className="w-20 h-1.5" />
                   </div>
                 )}
@@ -169,15 +172,19 @@ export function LeaderboardPage({ leaderboard, currentUserId }: LeaderboardPageP
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {Object.entries(LEVEL_NAMES).map(([level, info]) => (
-              <div key={level} className="flex flex-col items-center gap-1.5 p-3 rounded-lg bg-surface-800/50 hover:bg-surface-800 transition-colors">
-                <LevelStars level={Number(level)} size="md" />
-                <p className={`text-sm font-bold bg-gradient-to-r ${info.textGradient} bg-clip-text text-transparent`}>
-                  {info.name}
-                </p>
-                <p className="text-xs text-surface-400">{info.minXp.toLocaleString()} XP</p>
-              </div>
-            ))}
+            {Object.entries(LEVEL_NAMES).map(([level, info]) => {
+              const lvl = Number(level)
+              const nameColor = NAME_COLORS[lvl] || "#94a3b8"
+              return (
+                <div key={level} className="flex flex-col items-center gap-2 p-4 rounded-lg bg-surface-800/50 hover:bg-surface-800 transition-colors">
+                  <LevelStars level={lvl} size="md" />
+                  <span style={{ color: nameColor, fontSize: 14, fontWeight: 700 }}>
+                    {info.name}
+                  </span>
+                  <span className="text-xs text-surface-400">{info.minXp.toLocaleString()} XP</span>
+                </div>
+              )
+            })}
           </div>
         </CardContent>
       </Card>
