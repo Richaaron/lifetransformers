@@ -115,10 +115,23 @@ export async function signupAction(
     return { error: error.message }
   }
 
-  // Next steps depends on whether user is automatically logged in or needs to verify email.
-  // Assuming auto-login without email verification for now:
-  revalidatePath("/", "layout")
-  redirect("/feed") // Redirect directly to the feed
+  // Redirect to check email page for email confirmation
+  redirect("/check-email")
+}
+
+export async function resendConfirmationEmail(email: string): Promise<ActionResult> {
+  const supabase = await createClient()
+  
+  const { error } = await supabase.auth.resend({
+    type: 'signup',
+    email: email,
+  })
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  return { data: { message: "Confirmation email sent!" } }
 }
 
 export async function logoutAction() {
