@@ -17,33 +17,33 @@ interface LeaderboardPageProps {
 }
 
 const STAR_COLORS: Record<number, string> = {
-  1: "#94a3b8",
-  2: "#d1d5db",
-  3: "#34d399",
-  4: "#38bdf8",
-  5: "#60a5fa",
-  6: "#a78bfa",
-  7: "#818cf8",
-  8: "#fb923c",
-  9: "#fb7185",
-  10: "#fbbf24",
-  11: "#e879f9",
-  12: "#67e8f9",
+  1: "#a1a1aa",  // Zinc - Follower
+  2: "#f472b6",  // Pink - Believer
+  3: "#4ade80",  // Green - Disciple
+  4: "#22d3ee",  // Cyan - Witness
+  5: "#3b82f6",  // Blue - Minister
+  6: "#a855f7",  // Purple - Elder
+  7: "#f97316",  // Orange - Deacon
+  8: "#ef4444",  // Red - Pastor
+  9: "#eab308",  // Yellow - Bishop
+  10: "#10b981", // Emerald - Apostle
+  11: "#ec4899", // Hot Pink - Prophet
+  12: "#facc15", // Gold - Saint
 }
 
 const NAME_COLORS: Record<number, string> = {
-  1: "#94a3b8",
-  2: "#d1d5db",
-  3: "#34d399",
-  4: "#38bdf8",
-  5: "#60a5fa",
-  6: "#a78bfa",
-  7: "#818cf8",
-  8: "#fb923c",
-  9: "#fb7185",
-  10: "#fbbf24",
-  11: "#e879f9",
-  12: "#67e8f9",
+  1: "#a1a1aa",  // Zinc
+  2: "#f472b6",  // Pink
+  3: "#4ade80",  // Green
+  4: "#22d3ee",  // Cyan
+  5: "#3b82f6",  // Blue
+  6: "#a855f7",  // Purple
+  7: "#f97316",  // Orange
+  8: "#ef4444",  // Red
+  9: "#eab308",  // Yellow
+  10: "#10b981", // Emerald
+  11: "#ec4899", // Hot Pink
+  12: "#facc15", // Gold
 }
 
 function LevelStars({ level, size = "sm" }: { level: number; size?: "sm" | "md" }) {

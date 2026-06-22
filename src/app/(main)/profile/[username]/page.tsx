@@ -44,11 +44,20 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   const commentsCount = progress?.comments_count || 0
 
   const STAR_COLORS: Record<number, string> = {
-    1: "#94a3b8", 2: "#d1d5db", 3: "#34d399", 4: "#38bdf8",
-    5: "#60a5fa", 6: "#a78bfa", 7: "#818cf8", 8: "#fb923c",
-    9: "#fb7185", 10: "#fbbf24", 11: "#e879f9", 12: "#67e8f9",
+    1: "#a1a1aa",  // Zinc
+    2: "#f472b6",  // Pink
+    3: "#4ade80",  // Green
+    4: "#22d3ee",  // Cyan
+    5: "#3b82f6",  // Blue
+    6: "#a855f7",  // Purple
+    7: "#f97316",  // Orange
+    8: "#ef4444",  // Red
+    9: "#eab308",  // Yellow
+    10: "#10b981", // Emerald
+    11: "#ec4899", // Hot Pink
+    12: "#facc15", // Gold
   }
-  const nameColor = STAR_COLORS[level] || "#94a3b8"
+  const nameColor = STAR_COLORS[level] || "#a1a1aa"
 
   let filledStars = 0
   if (level >= 10) filledStars = 5
