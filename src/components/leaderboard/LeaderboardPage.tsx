@@ -118,10 +118,11 @@ export function LeaderboardPage({ leaderboard, currentUserId }: LeaderboardPageP
                 <div className="min-w-0">
                   <p className="font-semibold text-white truncate">{entry.display_name}</p>
                   <div className="flex items-center gap-2">
-                    <LevelStars level={entry.level} />
-                    <span className={`text-xs font-semibold bg-gradient-to-r ${levelInfo.textGradient} bg-clip-text text-transparent`}>
+                    <span className={`text-xs font-bold bg-gradient-to-r ${levelInfo.textGradient} bg-clip-text text-transparent`}>
                       {levelInfo.name}
                     </span>
+                    <span className="text-surface-600">·</span>
+                    <LevelStars level={entry.level} />
                   </div>
                 </div>
               </Link>
@@ -169,7 +170,7 @@ export function LeaderboardPage({ leaderboard, currentUserId }: LeaderboardPageP
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {Object.entries(LEVEL_NAMES).map(([level, info]) => (
-              <div key={level} className="flex flex-col items-center gap-1 p-3 rounded-lg bg-surface-800/50 hover:bg-surface-800 transition-colors">
+              <div key={level} className="flex flex-col items-center gap-1.5 p-3 rounded-lg bg-surface-800/50 hover:bg-surface-800 transition-colors">
                 <LevelStars level={Number(level)} size="md" />
                 <p className={`text-sm font-bold bg-gradient-to-r ${info.textGradient} bg-clip-text text-transparent`}>
                   {info.name}
