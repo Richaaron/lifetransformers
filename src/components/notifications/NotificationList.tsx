@@ -1,0 +1,133 @@
+"use client"
+
+import { useTransition } from "react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import { getInitials, formatRelativeTime } from "@/lib/utils"
+import { markNotificationRead, markAllNotificationsRead } from "@/lib/actions/notifications"
+import { UserPlus, UserCheck, Heart, MessageCircle, Users } from "lucide-react"
+import Link from "next/link"
+
+interface NotificationListProps {
+  notifications: any[]
+}
+
+export function NotificationList({ notifications }: NotificationListProps) {
+  const [isPending, startTransition] = useTransition()
+
+  const handleMarkAllRead = () => {
+    startTransition(() => {
+      markAllNotificationsRead()
+    })
+  }
+
+  const handleNotificationClick = (id: string, read: boolean) => {
+    if (!read) {
+      startTransition(() => {
+        markNotificationRead(id)
+      })
+    }
+  }
+
+  const getNotificationContent = (type: string, actorName: string) => {
+    switch (type) {
+      case 'friend_request':
+        return {
+          icon: <UserPlus className="w-4 h-4 text-brand-500" />,
+          text: <span><strong>{actorName}</strong> sent you a friend request.</span>,
+          href: "/friends"
+        }
+      case 'friend_accepted':
+        return {
+          icon: <UserCheck className="w-4 h-4 text-green-500" />,
+          text: <span><strong>{actorName}</strong> accepted your friend request.</span>,
+          href: "/friends"
+        }
+      case 'post_like':
+        return {
+          icon: <Heart className="w-4 h-4 text-pink-500 fill-pink-500" />,
+          text: <span><strong>{actorName}</strong> liked your post.</span>,
+          href: "/feed" // Could link to specific post if we had a single post view
+        }
+      case 'post_comment':
+        return {
+          icon: <MessageCircle className="w-4 h-4 text-blue-500" />,
+          text: <span><strong>{actorName}</strong> commented on your post.</span>,
+          href: "/feed"
+        }
+      case 'group_invite':
+        return {
+          icon: <Users className="w-4 h-4 text-purple-500" />,
+          text: <span><strong>{actorName}</strong> invited you to a group.</span>,
+          href: "/groups"
+        }
+      default:
+        return {
+          icon: <div className="w-2 h-2 rounded-full bg-surface-500" />,
+          text: <span><strong>{actorName}</strong> interacted with you.</span>,
+          href: "/"
+        }
+    }
+  }
+
+  if (notifications.length === 0) {
+    return (
+      <div className="bg-surface-900 border border-surface-800 rounded-xl p-8 text-center text-surface-400">
+        <p>You have no notifications.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-surface-900 border border-surface-800 rounded-xl overflow-hidden">
+      <div className="p-4 border-b border-surface-800 flex justify-end">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={handleMarkAllRead}
+          disabled={isPending || notifications.every(n => n.read)}
+        >
+          Mark all as read
+        </Button>
+      </div>
+      
+      <div className="divide-y divide-surface-800">
+        {notifications.map((notification) => {
+          const content = getNotificationContent(notification.type, notification.actor?.display_name || 'Someone')
+          
+          return (
+            <Link 
+              key={notification.id}
+              href={content.href}
+              onClick={() => handleNotificationClick(notification.id, notification.read)}
+              className={`flex items-start gap-4 p-4 hover:bg-surface-800 transition-colors ${
+                !notification.read ? 'bg-surface-800/30' : ''
+              }`}
+            >
+              <Avatar className="w-10 h-10 mt-1 shrink-0">
+                <AvatarImage src={notification.actor?.avatar_url || ""} />
+                <AvatarFallback>{getInitials(notification.actor?.display_name)}</AvatarFallback>
+              </Avatar>
+              
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  {content.icon}
+                  <p className={`text-sm ${!notification.read ? 'text-white' : 'text-surface-200'}`}>
+                    {content.text}
+                  </p>
+                </div>
+                <p className="text-xs text-surface-400 ml-6">
+                  {formatRelativeTime(notification.created_at)}
+                </p>
+              </div>
+              
+              {!notification.read && (
+                <div className="w-2 h-2 rounded-full bg-brand-500 mt-2 shrink-0"></div>
+              )}
+            </Link>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
