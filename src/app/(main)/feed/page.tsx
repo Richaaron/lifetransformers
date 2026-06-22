@@ -16,7 +16,7 @@ export default async function FeedPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("avatar_url, display_name")
+    .select("id, avatar_url, display_name")
     .eq("id", user.id)
     .single()
 
