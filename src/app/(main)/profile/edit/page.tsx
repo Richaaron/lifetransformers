@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Textarea } from "@/components/ui/textarea"
 import { getInitials } from "@/lib/utils"
 import { Loader2, CheckCircle, Camera, X } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
@@ -17,6 +18,10 @@ export default function EditProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [displayName, setDisplayName] = useState("")
   const [username, setUsername] = useState("")
+  const [dateOfBirth, setDateOfBirth] = useState("")
+  const [location, setLocation] = useState("")
+  const [hobby, setHobby] = useState("")
+  const [bio, setBio] = useState("")
   const [currentAvatar, setCurrentAvatar] = useState("")
   const [previewAvatar, setPreviewAvatar] = useState("")
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -52,6 +57,10 @@ export default function EditProfilePage() {
       setDisplayName(profile.display_name || "")
       setUsername(profile.username || "")
       setCurrentAvatar(profile.avatar_url || "")
+      setDateOfBirth(profile.date_of_birth || "")
+      setLocation(profile.location || "")
+      setHobby(profile.hobby || "")
+      setBio(profile.bio || "")
     }
     setIsLoading(false)
   }
@@ -135,6 +144,10 @@ export default function EditProfilePage() {
         display_name: displayName.trim(),
         username: username.trim().toLowerCase(),
         avatar_url: avatarUrl || null,
+        date_of_birth: dateOfBirth || null,
+        location: location.trim() || null,
+        hobby: hobby.trim() || null,
+        bio: bio.trim() || null,
       })
       .eq("id", userId)
 
@@ -207,12 +220,12 @@ export default function EditProfilePage() {
 
       <Card className="bg-surface-900 border-surface-800">
         <CardHeader>
-          <CardTitle>Profile Details</CardTitle>
-          <CardDescription>Update your display information</CardDescription>
+          <CardTitle>Basic Info</CardTitle>
+          <CardDescription>Your display information</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="displayName">Display Name</Label>
+            <Label htmlFor="displayName">Display Name *</Label>
             <Input
               id="displayName"
               value={displayName}
@@ -222,7 +235,7 @@ export default function EditProfilePage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="username">Username</Label>
+            <Label htmlFor="username">Username *</Label>
             <Input
               id="username"
               value={username}
@@ -232,14 +245,61 @@ export default function EditProfilePage() {
             />
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="dob">Date of Birth</Label>
+            <Input
+              id="dob"
+              type="date"
+              value={dateOfBirth}
+              onChange={(e) => setDateOfBirth(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="location">Location</Label>
+            <Input
+              id="location"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="e.g. Lagos, Nigeria"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="hobby">Hobby</Label>
+            <Input
+              id="hobby"
+              value={hobby}
+              onChange={(e) => setHobby(e.target.value)}
+              placeholder="e.g. Reading, Gaming, Cooking"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="bio">Bio</Label>
+            <Textarea
+              id="bio"
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              placeholder="Tell us about yourself..."
+              className="min-h-[80px] resize-none"
+              maxLength={200}
+            />
+            <p className="text-xs text-surface-500">{bio.length}/200 characters</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-surface-900 border-surface-800">
+        <CardContent className="pt-6">
           {error && (
-            <div className="p-3 rounded-md bg-red-500/20 border border-red-500/50 text-red-400 text-sm">
+            <div className="p-3 rounded-md bg-red-500/20 border border-red-500/50 text-red-400 text-sm mb-4">
               {error}
             </div>
           )}
 
           {success && (
-            <div className="p-3 rounded-md bg-green-500/20 border border-green-500/50 text-green-400 text-sm flex items-center gap-2">
+            <div className="p-3 rounded-md bg-green-500/20 border border-green-500/50 text-green-400 text-sm flex items-center gap-2 mb-4">
               <CheckCircle className="w-4 h-4" />
               Profile updated successfully!
             </div>

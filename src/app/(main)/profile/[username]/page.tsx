@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { getInitials } from "@/lib/utils"
 import { LEVEL_NAMES, getXpProgress } from "@/lib/types"
-import { Star, Trophy, MessageSquare, Heart, Calendar } from "lucide-react"
+import { Star, Trophy, MessageSquare, Heart, Calendar, MapPin, Gamepad2, User } from "lucide-react"
 import Link from "next/link"
 
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
@@ -142,6 +142,39 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
           </div>
         </CardContent>
       </Card>
+
+      {(profile.bio || profile.location || profile.hobby || profile.date_of_birth) && (
+        <Card className="bg-surface-900 border-surface-800">
+          <CardHeader>
+            <CardTitle className="text-sm">About</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {profile.bio && (
+              <p className="text-surface-200 text-sm">{profile.bio}</p>
+            )}
+            <div className="flex flex-wrap gap-4 text-sm text-surface-400">
+              {profile.location && (
+                <div className="flex items-center gap-1.5">
+                  <MapPin className="w-4 h-4" />
+                  <span>{profile.location}</span>
+                </div>
+              )}
+              {profile.hobby && (
+                <div className="flex items-center gap-1.5">
+                  <Gamepad2 className="w-4 h-4" />
+                  <span>{profile.hobby}</span>
+                </div>
+              )}
+              {profile.date_of_birth && (
+                <div className="flex items-center gap-1.5">
+                  <User className="w-4 h-4" />
+                  <span>{new Date(profile.date_of_birth).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</span>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
