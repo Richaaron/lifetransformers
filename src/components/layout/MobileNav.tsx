@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Home, Users, MessageSquare, Search, Settings, LogOut, X, Trophy } from "lucide-react"
+import { Home, Users, MessageSquare, Search, Settings, LogOut, X, Trophy, User } from "lucide-react"
 import { logoutAction } from "@/lib/actions/auth"
 
 interface MobileNavProps {
@@ -18,6 +18,7 @@ const navItems = [
   { name: "Groups", href: "/groups", icon: Users },
   { name: "Leaderboard", href: "/leaderboard", icon: Trophy },
   { name: "Search", href: "/search", icon: Search },
+  { name: "Profile", href: "/profile/edit", icon: User },
 ]
 
 export function MobileNav({ isOpen, onClose }: MobileNavProps) {

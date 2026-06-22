@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Users, MessageSquare, Bell, Trophy } from "lucide-react"
+import { Home, Users, MessageSquare, Bell, Trophy, User } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const tabs = [
@@ -10,7 +10,7 @@ const tabs = [
   { name: "Friends", href: "/friends", icon: Users },
   { name: "Messages", href: "/messages", icon: MessageSquare },
   { name: "Leaderboard", href: "/leaderboard", icon: Trophy },
-  { name: "Alerts", href: "/notifications", icon: Bell },
+  { name: "Profile", href: "/profile/edit", icon: User },
 ]
 
 export function BottomNav() {

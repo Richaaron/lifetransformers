@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Home, Users, MessageSquare, Bell, Search, Settings, LogOut, Trophy } from "lucide-react"
+import { Home, Users, MessageSquare, Bell, Search, Settings, LogOut, Trophy, User } from "lucide-react"
 import { logoutAction } from "@/lib/actions/auth"
 
 const navItems = [
@@ -14,6 +14,7 @@ const navItems = [
   { name: "Leaderboard", href: "/leaderboard", icon: Trophy },
   { name: "Notifications", href: "/notifications", icon: Bell },
   { name: "Search", href: "/search", icon: Search },
+  { name: "Profile", href: "/profile/edit", icon: User },
 ]
 
 export function Sidebar() {
