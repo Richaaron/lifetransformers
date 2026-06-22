@@ -16,40 +16,48 @@ interface LeaderboardPageProps {
   currentUserId: string
 }
 
-function LevelStars({ level }: { level: number }) {
-  const levelInfo = LEVEL_NAMES[level] || LEVEL_NAMES[1]
+function LevelStars({ level, size = "sm" }: { level: number; size?: "sm" | "md" }) {
+  const starSize = size === "md" ? "w-5 h-5" : "w-4 h-4"
   
-  // Number of filled stars based on level (1-3 stars)
-  const filledStars = Math.min(3, Math.ceil(level / 4))
-  const emptyStars = 3 - filledStars
+  // Stars based on level tier
+  let stars: ("filled" | "half" | "empty")[] = []
+  if (level <= 3) stars = ["filled", "empty", "empty"]
+  else if (level <= 6) stars = ["filled", "filled", "empty"]
+  else if (level <= 9) stars = ["filled", "filled", "filled"]
+  else stars = ["filled", "filled", "filled"]
+
+  // Color gets more vibrant as level increases
+  const starColor = level <= 3 
+    ? "text-gray-400" 
+    : level <= 6 
+      ? "text-yellow-500" 
+      : level <= 9 
+        ? "text-orange-400" 
+        : "text-amber-400"
 
   return (
     <div className="flex items-center gap-0.5">
-      {Array.from({ length: filledStars }).map((_, i) => (
+      {stars.map((type, i) => (
         <Star 
-          key={`filled-${i}`} 
-          className={`w-3.5 h-3.5 fill-current ${levelInfo.color}`} 
-        />
-      ))}
-      {Array.from({ length: emptyStars }).map((_, i) => (
-        <Star 
-          key={`empty-${i}`} 
-          className="w-3.5 h-3.5 text-surface-600" 
+          key={i} 
+          className={`${starSize} ${type === "filled" ? `fill-current ${starColor}` : "text-surface-600"}`} 
         />
       ))}
     </div>
   )
 }
 
-function LevelBadge({ level }: { level: number }) {
+function LevelBadge({ level, showName = true }: { level: number; showName?: boolean }) {
   const levelInfo = LEVEL_NAMES[level] || LEVEL_NAMES[1]
 
   return (
     <div className="flex items-center gap-1.5">
       <LevelStars level={level} />
-      <span className={`text-xs font-semibold bg-gradient-to-r ${levelInfo.textGradient} bg-clip-text text-transparent`}>
-        {levelInfo.name}
-      </span>
+      {showName && (
+        <span className={`text-xs font-semibold bg-gradient-to-r ${levelInfo.textGradient} bg-clip-text text-transparent`}>
+          {levelInfo.name}
+        </span>
+      )}
     </div>
   )
 }
@@ -98,7 +106,12 @@ export function LeaderboardPage({ leaderboard, currentUserId }: LeaderboardPageP
                 </Avatar>
                 <div className="min-w-0">
                   <p className="font-semibold text-white truncate">{entry.display_name}</p>
-                  <LevelBadge level={entry.level} />
+                  <div className="flex items-center gap-2">
+                    <LevelStars level={entry.level} />
+                    <span className={`text-xs font-semibold bg-gradient-to-r ${levelInfo.textGradient} bg-clip-text text-transparent`}>
+                      {levelInfo.name}
+                    </span>
+                  </div>
                 </div>
               </Link>
 
@@ -145,14 +158,12 @@ export function LeaderboardPage({ leaderboard, currentUserId }: LeaderboardPageP
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {Object.entries(LEVEL_NAMES).map(([level, info]) => (
-              <div key={level} className="flex items-center gap-2 p-2 rounded-md bg-surface-800/50">
-                <span className="text-lg">{info.icon}</span>
-                <div>
-                  <p className={`text-xs font-semibold bg-gradient-to-r ${info.textGradient} bg-clip-text text-transparent`}>
-                    {info.name}
-                  </p>
-                  <p className="text-xs text-surface-400">{info.minXp.toLocaleString()} XP</p>
-                </div>
+              <div key={level} className="flex flex-col items-center gap-1 p-3 rounded-lg bg-surface-800/50 hover:bg-surface-800 transition-colors">
+                <LevelStars level={Number(level)} size="md" />
+                <p className={`text-sm font-bold bg-gradient-to-r ${info.textGradient} bg-clip-text text-transparent`}>
+                  {info.name}
+                </p>
+                <p className="text-xs text-surface-400">{info.minXp.toLocaleString()} XP</p>
               </div>
             ))}
           </div>
