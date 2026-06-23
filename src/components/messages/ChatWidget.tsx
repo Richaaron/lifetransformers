@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useChat } from "@/components/providers/ChatProvider"
 import { MessageThread } from "@/components/messages/MessageThread"
 import { createClient } from "@/lib/supabase/client"
+import { decryptMessagesAction } from "@/lib/actions/messages"
 import { Loader2, X } from "lucide-react"
 
 export function ChatWidget() {
@@ -73,7 +74,11 @@ export function ChatWidget() {
         .order("created_at", { ascending: true })
         .limit(50)
 
-      setInitialMessages(messagesData || [])
+      const rawMessages = messagesData || []
+
+      // Decrypt messages server-side before displaying
+      const { data: decryptedMessages } = await decryptMessagesAction(rawMessages, activeConversationId!)
+      setInitialMessages(decryptedMessages || rawMessages)
 
     } catch (err: any) {
       console.error(err)

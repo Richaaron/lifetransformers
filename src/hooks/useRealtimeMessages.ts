@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, type Dispatch, type SetStateAction } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { markConversationRead } from "@/lib/actions/messages"
+import { markConversationRead, decryptMessagesAction } from "@/lib/actions/messages"
 
 export function useRealtimeMessages(conversationId: string, initialMessages: any[]) {
   const [messages, setMessages] = useState(initialMessages)
@@ -34,17 +34,23 @@ export function useRealtimeMessages(conversationId: string, initialMessages: any
 
           const formattedMessage = {
             id: newMessage.id,
-            content: newMessage.content,
+            content: newMessage.content, // still encrypted at this point
             created_at: newMessage.created_at,
             sender_id: newMessage.sender_id,
+            message_type: newMessage.message_type,
+            audio_url: newMessage.audio_url,
             sender: profile
           }
+
+          // Decrypt the content via server action
+          const { data: decrypted } = await decryptMessagesAction([formattedMessage], conversationId)
+          const finalMessage = decrypted?.[0] ?? formattedMessage
 
           setMessages((prev) => {
             if (prev.some((message) => message.id === newMessage.id)) {
               return prev
             }
-            return [...prev, formattedMessage]
+            return [...prev, finalMessage]
           })
           
           // Mark as read again since we are looking at the thread

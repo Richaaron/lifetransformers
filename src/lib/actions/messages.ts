@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { ActionResult } from "@/lib/types"
+import { encryptMessage, decryptMessages } from "@/lib/utils/encryption"
 
 export async function getOrCreateConversation(targetUserId: string): Promise<ActionResult<{ id: string }>> {
   const supabase = await createClient()
@@ -57,13 +58,14 @@ export async function sendMessage(conversationId: string, content: string): Prom
   if (!content.trim()) return { error: "Message cannot be empty" }
 
   const finalContent = content.trim()
+  const encryptedContent = encryptMessage(finalContent, conversationId)
 
   const { data: insertedMessage, error } = await supabase
     .from('messages')
     .insert({
       conversation_id: conversationId,
       sender_id: user.id,
-      content: finalContent
+      content: encryptedContent
     })
     .select()
     .single()
@@ -85,7 +87,33 @@ export async function sendMessage(conversationId: string, content: string): Prom
     .eq('conversation_id', conversationId)
     .eq('user_id', user.id)
 
-  return { data: insertedMessage }
+  // Return decrypted message to the caller so they see plaintext immediately
+  return { data: { ...insertedMessage, content: finalContent } }
+}
+
+/**
+ * Server action to decrypt an array of messages.
+ * Called by the client after fetching or receiving realtime messages.
+ */
+export async function decryptMessagesAction(
+  messages: any[],
+  conversationId: string
+): Promise<ActionResult<any[]>> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: "Unauthorized" }
+
+  // Verify user is a participant in this conversation before decrypting
+  const { data: participant } = await supabase
+    .from('conversation_participants')
+    .select('user_id')
+    .eq('conversation_id', conversationId)
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (!participant) return { error: "Access denied" }
+
+  return { data: decryptMessages(messages, conversationId) }
 }
 
 export async function markConversationRead(conversationId: string): Promise<ActionResult> {

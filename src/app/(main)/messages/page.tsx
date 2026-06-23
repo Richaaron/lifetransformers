@@ -11,6 +11,7 @@ import { usePresence } from "@/hooks/usePresence"
 import { OnlineIndicator } from "@/components/ui/OnlineIndicator"
 import { Suspense } from "react"
 import { useChat } from "@/components/providers/ChatProvider"
+import { decryptMessagesAction } from "@/lib/actions/messages"
 
 function MessagesPageInner() {
   const router = useRouter()
@@ -154,6 +155,21 @@ function MessagesPageInner() {
       })
 
       let result = (await Promise.all(resultPromises)).filter(Boolean) as any[]
+
+      // Decrypt last message previews
+      result = await Promise.all(
+        result.map(async (convo) => {
+          if (!convo.last_message?.content) return convo
+          const { data: decrypted } = await decryptMessagesAction(
+            [convo.last_message],
+            convo.id
+          )
+          return {
+            ...convo,
+            last_message: decrypted?.[0] ?? convo.last_message,
+          }
+        })
+      )
 
       result.sort((a, b) => {
         if (!a.last_message) return 1
