@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { getInitials, formatRelativeTime } from "@/lib/utils"
 import { Heart, MessageCircle, MoreHorizontal, Trash2, Send, ChevronDown, ChevronUp } from "lucide-react"
 import Link from "next/link"
-import { deletePost, addComment, getComments, toggleCommentLike } from "@/lib/actions/posts"
+import { deletePost } from "@/lib/actions/posts"
 import { RichTextContent } from "@/components/feed/RichTextContent"
 import { ReactionBar } from "@/components/feed/ReactionBar"
 import type { ReactionType } from "@/lib/actions/reactions"
@@ -40,6 +40,7 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
   const [commentText, setCommentText] = useState("")
   const [isSubmittingComment, setIsSubmittingComment] = useState(false)
   const [commentsCount, setCommentsCount] = useState(post.comments_count)
+  const [isLoadingComments, setIsLoadingComments] = useState(false)
 
   const [replyToCommentId, setReplyToCommentId] = useState<string | null>(null)
   const [replyText, setReplyText] = useState("")
@@ -54,29 +55,53 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
     }
   }
 
-  const handleToggleComments = async () => {
-    if (!showComments && comments.length === 0) {
-      const fetched = await getComments(post.id)
-      setComments(fetched)
+  const fetchComments = async () => {
+    setIsLoadingComments(true)
+    try {
+      const res = await fetch(`/api/comments?postId=${post.id}`)
+      if (res.ok) {
+        const data = await res.json()
+        setComments(data.comments || [])
+      }
+    } catch (err) {
+      console.error("Failed to fetch comments:", err)
+    } finally {
+      setIsLoadingComments(false)
     }
-    setShowComments(!showComments)
+  }
+
+  const handleToggleComments = async () => {
+    const next = !showComments
+    setShowComments(next)
+    if (next && comments.length === 0) {
+      await fetchComments()
+    }
   }
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!commentText.trim() || isSubmittingComment) return
     setIsSubmittingComment(true)
-    const result = await addComment(post.id, commentText)
-    if (!result.error) {
-      const fetched = await getComments(post.id)
-      setComments(fetched)
-      setCommentText("")
-      setCommentsCount(commentsCount + 1)
+    try {
+      const res = await fetch("/api/comments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ postId: post.id, content: commentText }),
+      })
+      if (res.ok) {
+        setCommentText("")
+        setCommentsCount((c: number) => c + 1)
+        await fetchComments()
+      }
+    } catch (err) {
+      console.error("Failed to submit comment:", err)
+    } finally {
+      setIsSubmittingComment(false)
     }
-    setIsSubmittingComment(false)
   }
 
   const handleCommentLike = async (commentId: string) => {
+    // Optimistic update
     setComments(prev =>
       prev.map(c => {
         if (c.id === commentId) {
@@ -86,10 +111,15 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
         return c
       })
     )
-    const result = await toggleCommentLike(commentId)
-    if (result?.error) {
-      const fetched = await getComments(post.id)
-      setComments(fetched)
+    try {
+      await fetch("/api/comments", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ commentId }),
+      })
+    } catch (err) {
+      // revert on error
+      await fetchComments()
     }
   }
 
@@ -97,15 +127,23 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
     e.preventDefault()
     if (!replyText.trim() || isSubmittingReply) return
     setIsSubmittingReply(true)
-    const result = await addComment(post.id, replyText, parentId)
-    if (!result.error) {
-      const fetched = await getComments(post.id)
-      setComments(fetched)
-      setReplyText("")
-      setReplyToCommentId(null)
-      setCommentsCount(commentsCount + 1)
+    try {
+      const res = await fetch("/api/comments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ postId: post.id, content: replyText, parentId }),
+      })
+      if (res.ok) {
+        setReplyText("")
+        setReplyToCommentId(null)
+        setCommentsCount((c: number) => c + 1)
+        await fetchComments()
+      }
+    } catch (err) {
+      console.error("Failed to submit reply:", err)
+    } finally {
+      setIsSubmittingReply(false)
     }
-    setIsSubmittingReply(false)
   }
 
   if (isDeleting) return null
@@ -171,7 +209,7 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
           )}
         </div>
 
-        {/* Content — hashtags and @mentions rendered as clickable links */}
+        {/* Content */}
         <RichTextContent
           content={post.content}
           className="text-[15px] text-white/85 mb-4"
@@ -192,8 +230,7 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
         )}
 
         {/* Reaction Row */}
-        <div className="flex items-center gap-2 pt-4 border-t border-white/[0.05] flex-wrap pointer-events-auto">
-          {/* Faith Reactions */}
+        <div className="flex items-center gap-2 pt-4 border-t border-white/[0.05] flex-wrap">
           <ReactionBar
             postId={post.id}
             initialSummary={reactionSummary ?? DEFAULT_REACTION_SUMMARY}
@@ -202,7 +239,7 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
           {/* Comment Toggle Button */}
           <button
             onClick={handleToggleComments}
-            className={`relative z-20 pointer-events-auto btn-reaction ${showComments ? "commented" : "default"}`}
+            className={`btn-reaction ${showComments ? "commented" : "default"}`}
           >
             <MessageCircle className="w-4 h-4" />
             <span>{commentsCount > 0 ? commentsCount : "Comment"}</span>
@@ -217,7 +254,7 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
 
       {/* Comments Panel */}
       {showComments && (
-        <div className="relative z-10 border-t border-white/[0.05] px-5 sm:px-6 py-5 space-y-5 animate-fade-in rounded-b-2xl"
+        <div className="relative z-10 border-t border-white/[0.05] px-5 sm:px-6 py-5 space-y-5 rounded-b-2xl"
           style={{ background: "rgba(0,0,0,0.15)" }}>
 
           {/* Comment Input */}
@@ -244,19 +281,23 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
           </form>
 
           {/* Comments List */}
-          {comments.length > 0 ? (
+          {isLoadingComments ? (
+            <div className="text-center py-4">
+              <p className="text-surface-500 text-sm animate-pulse">Loading comments…</p>
+            </div>
+          ) : comments.length > 0 ? (
             <div className="space-y-5">
               {comments
                 .filter((c: any) => !c.parent_id)
-                .map((comment: any, i: number) => {
+                .map((comment: any) => {
                   const replies = comments.filter((r: any) => r.parent_id === comment.id)
                   const isReplyingToThis = replyToCommentId === comment.id
                   return (
-                    <div key={comment.id} className="animate-fade-up space-y-3" style={{ animationDelay: `${i * 40}ms` }}>
+                    <div key={comment.id} className="space-y-3">
                       {/* Main Comment */}
                       <div className="flex items-start gap-2.5">
                         <Link href={`/profile/${comment.author?.username}`} className="shrink-0 mt-0.5">
-                          <Avatar className="w-7.5 h-7.5 border border-surface-700 hover:border-brand-500/30 transition-colors">
+                          <Avatar className="w-7 h-7 border border-surface-700 hover:border-brand-500/30 transition-colors">
                             <AvatarImage src={comment.author?.avatar_url || ""} />
                             <AvatarFallback className="bg-surface-700 text-[10px] text-brand-400 font-bold">
                               {getInitials(comment.author?.display_name)}
@@ -275,7 +316,7 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
                               <Link href={`/profile/${comment.author?.username}`} className="text-[13px] font-bold text-white hover:text-brand-400 transition-colors">
                                 {comment.author?.display_name}
                               </Link>
-                              <span className="text-[11px] text-surface-500">{formatRelativeTime(comment.created_at)}</span>
+                              <span suppressHydrationWarning className="text-[11px] text-surface-500">{formatRelativeTime(comment.created_at)}</span>
                             </div>
                             <p className="text-[13.5px] text-white/80 leading-relaxed">{comment.content}</p>
                           </div>
@@ -300,7 +341,7 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
 
                       {/* Inline Reply Form */}
                       {isReplyingToThis && (
-                        <form onSubmit={(e) => handleSubmitReply(e, comment.id)} className="flex items-center gap-2.5 pl-10 animate-fade-in">
+                        <form onSubmit={(e) => handleSubmitReply(e, comment.id)} className="flex items-center gap-2.5 pl-10">
                           <Avatar className="w-6 h-6 shrink-0 border border-brand-500/20">
                             <AvatarFallback className="bg-surface-700 text-[9px] text-brand-400">You</AvatarFallback>
                           </Avatar>
@@ -316,7 +357,7 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
                             <button
                               type="submit"
                               disabled={!replyText.trim() || isSubmittingReply}
-                              className="absolute right-1.5 top-1/2 -translate-y-1/2 w-5.5 h-5.5 rounded-full text-brand-400 flex items-center justify-center disabled:opacity-30"
+                              className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full text-brand-400 flex items-center justify-center disabled:opacity-30"
                             >
                               <Send className="w-3 h-3" />
                             </button>
@@ -351,7 +392,7 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
                                     <Link href={`/profile/${reply.author?.username}`} className="text-[12px] font-bold text-white hover:text-brand-400 transition-colors">
                                       {reply.author?.display_name}
                                     </Link>
-                                    <span className="text-[10px] text-surface-500">{formatRelativeTime(reply.created_at)}</span>
+                                    <span suppressHydrationWarning className="text-[10px] text-surface-500">{formatRelativeTime(reply.created_at)}</span>
                                   </div>
                                   <p className="text-[12.5px] text-white/75 leading-relaxed">{reply.content}</p>
                                 </div>

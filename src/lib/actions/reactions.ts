@@ -9,8 +9,8 @@ export type ReactionType = "amen" | "love" | "praying" | "inspired" | "like"
 export const REACTIONS: Record<ReactionType, { emoji: string; label: string; color: string }> = {
   amen:     { emoji: "🙏", label: "Amen",     color: "text-amber-400"  },
   love:     { emoji: "❤️",  label: "Love",     color: "text-rose-400"   },
-  praying:  { emoji: "🕯️", label: "Praying",  color: "text-purple-400" },
-  inspired: { emoji: "🌟",  label: "Inspired", color: "text-yellow-400" },
+  praying:  { emoji: "🕊️", label: "Praying",  color: "text-purple-400" },
+  inspired: { emoji: "✨",  label: "Inspired", color: "text-yellow-400" },
   like:     { emoji: "👍",  label: "Like",     color: "text-blue-400"   },
 }
 
