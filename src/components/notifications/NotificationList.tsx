@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { getInitials, formatRelativeTime } from "@/lib/utils"
 import { markNotificationRead, markAllNotificationsRead } from "@/lib/actions/notifications"
-import { UserPlus, UserCheck, Heart, MessageCircle, Users } from "lucide-react"
+import { UserPlus, UserCheck, Heart, MessageCircle, Users, ShieldAlert } from "lucide-react"
 import Link from "next/link"
 import { useNotifications } from "@/components/providers/NotificationProvider"
 
@@ -78,6 +78,12 @@ export function NotificationList({ notifications }: NotificationListProps) {
           icon: <Users className="w-4 h-4 text-purple-500" />,
           text: <span><strong>{actorName}</strong> invited you to a group.</span>,
           href: "/groups"
+        }
+      case 'system':
+        return {
+          icon: <ShieldAlert className="w-4 h-4 text-orange-500" />,
+          text: <span><strong>Security Alert:</strong> New login detected on a new device.</span>,
+          href: "/settings/security"
         }
       default:
         return {

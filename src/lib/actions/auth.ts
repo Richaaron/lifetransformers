@@ -63,6 +63,12 @@ export async function loginAction(
     return { error: error.message }
   }
 
+  // Check MFA status
+  const { data: mfaData, error: mfaError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+  if (!mfaError && mfaData?.nextLevel === 'aal2' && mfaData?.currentLevel === 'aal1') {
+    redirect("/login/mfa")
+  }
+
   revalidatePath("/", "layout")
   redirect("/feed")
 }

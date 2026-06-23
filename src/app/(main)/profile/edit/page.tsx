@@ -352,6 +352,23 @@ export default function EditProfilePage() {
           </Button>
         </CardContent>
       </Card>
+
+      {/* Security Settings Link */}
+      <Card className="bg-surface-900 border-surface-800">
+        <CardHeader>
+          <CardTitle>Account Security</CardTitle>
+          <CardDescription>Manage your Two-Factor Authentication (2FA) and device history.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button 
+            variant="outline" 
+            onClick={() => router.push("/settings/security")}
+            className="w-full bg-surface-800 border-surface-700 hover:bg-surface-700 hover:text-white"
+          >
+            Manage Security Settings
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   )
 }

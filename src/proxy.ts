@@ -57,9 +57,21 @@ export default async function proxy(request: NextRequest) {
 
   // If user is logged in and attempts to access root or login/signup, redirect to feed
   if (user && (isAuthRoute || isRoot)) {
+    // Unless they are on /login/mfa, then let them pass
+    if (pathname === '/login/mfa') return response
     const url = request.nextUrl.clone()
     url.pathname = '/feed'
     return NextResponse.redirect(url)
+  }
+
+  // MFA enforcement for protected routes
+  if (user && !isAuthRoute && !isRoot) {
+    const { data: mfaData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+    if (mfaData?.nextLevel === 'aal2' && mfaData?.currentLevel === 'aal1') {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login/mfa'
+      return NextResponse.redirect(url)
+    }
   }
 
   return response
