@@ -1,11 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { getInitials, formatRelativeTime } from "@/lib/utils"
-import { Heart, MessageCircle, MoreHorizontal, Trash2, Send } from "lucide-react"
+import { Heart, MessageCircle, MoreHorizontal, Trash2, Send, ChevronDown, ChevronUp } from "lucide-react"
 import Link from "next/link"
 import { toggleLike, deletePost, addComment, getComments, toggleCommentLike } from "@/lib/actions/posts"
 import {
@@ -30,7 +29,7 @@ export function PostCard({ post, currentUserId }: PostCardProps) {
   const [commentText, setCommentText] = useState("")
   const [isSubmittingComment, setIsSubmittingComment] = useState(false)
   const [commentsCount, setCommentsCount] = useState(post.comments_count)
-  
+
   const [replyToCommentId, setReplyToCommentId] = useState<string | null>(null)
   const [replyText, setReplyText] = useState("")
   const [isSubmittingReply, setIsSubmittingReply] = useState(false)
@@ -39,12 +38,9 @@ export function PostCard({ post, currentUserId }: PostCardProps) {
 
   const handleLike = async () => {
     if (isLiking) return
-    
-    // Optimistic update
     setIsLiked(!isLiked)
     setLikesCount(isLiked ? likesCount - 1 : likesCount + 1)
     setIsLiking(true)
-    
     await toggleLike(post.id)
     setIsLiking(false)
   }
@@ -58,8 +54,8 @@ export function PostCard({ post, currentUserId }: PostCardProps) {
 
   const handleToggleComments = async () => {
     if (!showComments && comments.length === 0) {
-      const fetchedComments = await getComments(post.id)
-      setComments(fetchedComments)
+      const fetched = await getComments(post.id)
+      setComments(fetched)
     }
     setShowComments(!showComments)
   }
@@ -67,55 +63,42 @@ export function PostCard({ post, currentUserId }: PostCardProps) {
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!commentText.trim() || isSubmittingComment) return
-
     setIsSubmittingComment(true)
     const result = await addComment(post.id, commentText)
-    
     if (!result.error) {
-      // Refresh comments
-      const fetchedComments = await getComments(post.id)
-      setComments(fetchedComments)
+      const fetched = await getComments(post.id)
+      setComments(fetched)
       setCommentText("")
       setCommentsCount(commentsCount + 1)
     }
-    
     setIsSubmittingComment(false)
   }
 
   const handleCommentLike = async (commentId: string) => {
-    // Optimistic update
-    setComments(prevComments =>
-      prevComments.map(c => {
+    setComments(prev =>
+      prev.map(c => {
         if (c.id === commentId) {
-          const userHasLiked = !c.user_has_liked
-          return {
-            ...c,
-            user_has_liked: userHasLiked,
-            likes_count: userHasLiked ? c.likes_count + 1 : Math.max(0, c.likes_count - 1)
-          }
+          const liked = !c.user_has_liked
+          return { ...c, user_has_liked: liked, likes_count: liked ? c.likes_count + 1 : Math.max(0, c.likes_count - 1) }
         }
         return c
       })
     )
-
     const result = await toggleCommentLike(commentId)
     if (result?.error) {
-      // Revert/refresh on error
-      const fetchedComments = await getComments(post.id)
-      setComments(fetchedComments)
+      const fetched = await getComments(post.id)
+      setComments(fetched)
     }
   }
 
   const handleSubmitReply = async (e: React.FormEvent, parentId: string) => {
     e.preventDefault()
     if (!replyText.trim() || isSubmittingReply) return
-
     setIsSubmittingReply(true)
     const result = await addComment(post.id, replyText, parentId)
-
     if (!result.error) {
-      const fetchedComments = await getComments(post.id)
-      setComments(fetchedComments)
+      const fetched = await getComments(post.id)
+      setComments(fetched)
       setReplyText("")
       setReplyToCommentId(null)
       setCommentsCount(commentsCount + 1)
@@ -126,223 +109,264 @@ export function PostCard({ post, currentUserId }: PostCardProps) {
   if (isDeleting) return null
 
   return (
-    <div className="glass rounded-2xl p-5 sm:p-7 transition-all duration-300 hover:shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:border-white/10 group">
-      <div className="flex items-center justify-between mb-4">
-        <Link href={`/profile/${post.author.username}`} className="flex items-center gap-3 group/author">
-          <Avatar className="w-12 h-12 border border-surface-700 shadow-sm transition-transform duration-300 group-hover/author:scale-105 group-hover/author:border-brand-500/50">
-            <AvatarImage src={post.author.avatar_url || ""} />
-            <AvatarFallback>{getInitials(post.author.display_name)}</AvatarFallback>
-          </Avatar>
-          <div>
-            <h4 className="font-bold text-white text-base group-hover/author:text-brand-400 transition-colors">{post.author.display_name}</h4>
-            <p className="text-xs text-surface-400 font-medium">{formatRelativeTime(post.created_at)}</p>
-          </div>
-        </Link>
-        
-        {isAuthor && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-surface-400">
-                <MoreHorizontal className="w-4 h-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-surface-800 border-surface-700">
-              <DropdownMenuItem 
-                onClick={handleDelete}
-                className="text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete Post
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-      </div>
-      
-      <div className="space-y-4">
-        <p className="text-surface-100 whitespace-pre-wrap text-[15px] leading-relaxed">{post.content}</p>
-        
+    <article
+      className="group relative rounded-2xl overflow-hidden transition-all duration-300"
+      style={{
+        background: "linear-gradient(160deg, rgba(14,12,26,0.88) 0%, rgba(10,10,20,0.75) 100%)",
+        backdropFilter: "blur(24px)",
+        border: "1px solid rgba(255,255,255,0.07)",
+        boxShadow: "0 4px 24px rgba(0,0,0,0.35)",
+      }}
+    >
+      {/* Hover top accent line */}
+      <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-brand-500/0 to-transparent transition-all duration-500 group-hover:via-brand-500/40" />
+
+      <div
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-2xl"
+        style={{ boxShadow: "inset 0 0 0 1px rgba(234,179,8,0.1)" }}
+      />
+
+      <div className="p-5 sm:p-6">
+        {/* Author Row */}
+        <div className="flex items-start justify-between mb-4">
+          <Link href={`/profile/${post.author.username}`} className="flex items-center gap-3 group/author">
+            <div className="relative shrink-0">
+              <Avatar className="w-11 h-11 border-2 border-transparent transition-all duration-300 group-hover/author:border-brand-500/40"
+                style={{ boxShadow: "0 0 0 1px rgba(255,255,255,0.08)" }}>
+                <AvatarImage src={post.author.avatar_url || ""} />
+                <AvatarFallback className="bg-surface-700 text-brand-400 font-bold text-sm">
+                  {getInitials(post.author.display_name)}
+                </AvatarFallback>
+              </Avatar>
+            </div>
+            <div>
+              <p className="font-bold text-white text-[15px] group-hover/author:text-brand-400 transition-colors duration-200 leading-tight">
+                {post.author.display_name}
+              </p>
+              <p className="text-[12px] text-surface-400 font-medium mt-0.5">
+                @{post.author.username} · {formatRelativeTime(post.created_at)}
+              </p>
+            </div>
+          </Link>
+
+          {isAuthor && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="w-8 h-8 rounded-xl flex items-center justify-center text-surface-500 hover:text-white hover:bg-white/[0.07] transition-all duration-200 opacity-0 group-hover:opacity-100 press-effect">
+                  <MoreHorizontal className="w-4 h-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-surface-800/95 backdrop-blur-xl border-surface-700/60 rounded-xl shadow-2xl">
+                <DropdownMenuItem
+                  onClick={handleDelete}
+                  className="text-red-400 focus:bg-red-500/10 focus:text-red-300 cursor-pointer rounded-lg gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Delete Post
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+
+        {/* Content */}
+        <p className="text-[15px] text-white/85 leading-relaxed whitespace-pre-wrap mb-4">{post.content}</p>
+
+        {/* Post Image */}
         {post.image_url && (
-          <div className="rounded-xl overflow-hidden border border-surface-700/50 mt-4 shadow-md group-hover:border-white/10 transition-colors">
-            <img 
-              src={post.image_url} 
-              alt="Post attachment" 
-              className="w-full h-auto object-cover max-h-[500px]"
-            />
+          <div className="rounded-xl overflow-hidden border border-white/[0.07] mb-4 shadow-lg">
+            <img src={post.image_url} alt="Post attachment" className="w-full h-auto object-cover max-h-[480px]" />
           </div>
         )}
-      </div>
-      
-      <div className="flex items-center justify-between pt-4 mt-5 border-t border-surface-700/40">
-        <div className="flex items-center gap-1 sm:gap-2">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className={`gap-2 rounded-full px-4 hover:bg-brand-500/10 transition-colors ${isLiked ? 'text-brand-500' : 'text-surface-300 hover:text-white'}`}
+
+        {/* Post Video */}
+        {post.video_url && (
+          <div className="rounded-xl overflow-hidden border border-white/[0.07] mb-4 shadow-lg">
+            <video src={post.video_url} controls className="w-full max-h-[480px]" />
+          </div>
+        )}
+
+        {/* Reaction Row */}
+        <div className="flex items-center gap-2 pt-4 border-t border-white/[0.05]">
+          {/* Like Button */}
+          <button
             onClick={handleLike}
             disabled={isLiking}
+            className={`btn-reaction press-effect ${isLiked ? "liked" : "default"}`}
           >
-            <Heart className={`w-5 h-5 ${isLiked ? 'fill-current animate-scale-in' : ''}`} />
-            <span className="font-medium">{likesCount > 0 ? likesCount : 'Like'}</span>
-          </Button>
-          
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="gap-2 rounded-full px-4 text-surface-300 hover:text-white hover:bg-surface-800/80 transition-colors"
+            <Heart className={`w-4 h-4 transition-all duration-200 ${isLiked ? "fill-pink-400 scale-110" : ""}`} />
+            <span>{likesCount > 0 ? likesCount : "Like"}</span>
+          </button>
+
+          {/* Comment Toggle Button */}
+          <button
             onClick={handleToggleComments}
+            className={`btn-reaction ${showComments ? "commented" : "default"}`}
           >
-            <MessageCircle className="w-5 h-5" />
-            <span className="font-medium">{commentsCount > 0 ? commentsCount : 'Comment'}</span>
-          </Button>
+            <MessageCircle className="w-4 h-4" />
+            <span>{commentsCount > 0 ? commentsCount : "Comment"}</span>
+            {commentsCount > 0 && (
+              showComments
+                ? <ChevronUp className="w-3 h-3 opacity-60" />
+                : <ChevronDown className="w-3 h-3 opacity-60" />
+            )}
+          </button>
         </div>
       </div>
 
-      {/* Comments Section */}
+      {/* Comments Panel */}
       {showComments && (
-        <div className="mt-5 pt-5 border-t border-surface-700/40 space-y-5 animate-fade-in">
-          {/* Comment Form */}
+        <div className="border-t border-white/[0.05] px-5 sm:px-6 py-5 space-y-5 animate-fade-in"
+          style={{ background: "rgba(0,0,0,0.15)" }}>
+
+          {/* Comment Input */}
           <form onSubmit={handleSubmitComment} className="flex items-center gap-3">
-            <Avatar className="w-9 h-9 border border-surface-700">
-              <AvatarFallback>You</AvatarFallback>
+            <Avatar className="w-8 h-8 shrink-0 border border-brand-500/25">
+              <AvatarFallback className="bg-surface-700 text-brand-400 font-bold text-xs">You</AvatarFallback>
             </Avatar>
-            <div className="flex-1 flex gap-2 relative">
+            <div className="flex-1 relative">
               <Input
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
-                placeholder="Write a comment..."
-                className="bg-surface-900/50 border-surface-700/60 text-white placeholder:text-surface-500 rounded-full pl-4 pr-12 h-11 focus:border-brand-500/50 focus:bg-surface-800/80 transition-all"
+                placeholder="Write a comment…"
+                className="bg-surface-900/60 border-surface-700/50 text-white placeholder:text-surface-500 rounded-full pl-4 pr-11 h-10 text-sm focus:border-brand-500/40 focus:bg-surface-800/70 transition-all input-warm"
                 disabled={isSubmittingComment}
               />
-              <Button 
-                type="submit" 
-                size="icon" 
-                variant="ghost"
+              <button
+                type="submit"
                 disabled={!commentText.trim() || isSubmittingComment}
-                className="absolute right-1 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full text-brand-500 hover:text-brand-400 hover:bg-brand-500/10"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-brand-500/15 hover:bg-brand-500/25 text-brand-400 flex items-center justify-center transition-all press-effect disabled:opacity-30"
               >
-                <Send className="w-4 h-4" />
-              </Button>
+                <Send className="w-3.5 h-3.5" />
+              </button>
             </div>
           </form>
 
           {/* Comments List */}
           {comments.length > 0 ? (
-            <div className="space-y-6 pl-2">
+            <div className="space-y-5">
               {comments
                 .filter((c: any) => !c.parent_id)
                 .map((comment: any, i: number) => {
                   const replies = comments.filter((r: any) => r.parent_id === comment.id)
                   const isReplyingToThis = replyToCommentId === comment.id
-
                   return (
-                    <div key={comment.id} className="space-y-3 animate-fade-up" style={{ animationDelay: `${i * 50}ms` }}>
+                    <div key={comment.id} className="animate-fade-up space-y-3" style={{ animationDelay: `${i * 40}ms` }}>
                       {/* Main Comment */}
-                      <div className="flex items-start gap-3">
-                        <Avatar className="w-8 h-8 mt-1 shrink-0 border border-surface-700">
-                          <AvatarImage src={comment.author?.avatar_url || ""} />
-                          <AvatarFallback>{getInitials(comment.author?.display_name)}</AvatarFallback>
-                        </Avatar>
+                      <div className="flex items-start gap-2.5">
+                        <Link href={`/profile/${comment.author?.username}`} className="shrink-0 mt-0.5">
+                          <Avatar className="w-7.5 h-7.5 border border-surface-700 hover:border-brand-500/30 transition-colors">
+                            <AvatarImage src={comment.author?.avatar_url || ""} />
+                            <AvatarFallback className="bg-surface-700 text-[10px] text-brand-400 font-bold">
+                              {getInitials(comment.author?.display_name)}
+                            </AvatarFallback>
+                          </Avatar>
+                        </Link>
                         <div className="flex-1 space-y-1">
-                          <div className="bg-surface-800/40 border border-surface-700/30 rounded-2xl rounded-tl-sm p-3.5 shadow-sm">
+                          <div
+                            className="rounded-2xl rounded-tl-sm px-4 py-3"
+                            style={{
+                              background: "rgba(255,255,255,0.04)",
+                              border: "1px solid rgba(255,255,255,0.07)",
+                            }}
+                          >
                             <div className="flex items-baseline gap-2 mb-1.5">
                               <Link href={`/profile/${comment.author?.username}`} className="text-[13px] font-bold text-white hover:text-brand-400 transition-colors">
                                 {comment.author?.display_name}
                               </Link>
-                              <span className="text-[11px] font-medium text-surface-500">{formatRelativeTime(comment.created_at)}</span>
+                              <span className="text-[11px] text-surface-500">{formatRelativeTime(comment.created_at)}</span>
                             </div>
-                            <p className="text-sm text-surface-200 leading-snug">{comment.content}</p>
+                            <p className="text-[13.5px] text-white/80 leading-relaxed">{comment.content}</p>
                           </div>
-                          
-                          {/* Comment Actions */}
-                          <div className="flex items-center gap-4 text-xs font-semibold pl-2 text-surface-400">
+                          {/* Comment actions */}
+                          <div className="flex items-center gap-3 pl-2 text-[11px] font-semibold text-surface-500">
                             <button
                               onClick={() => handleCommentLike(comment.id)}
-                              className={`flex items-center gap-1 hover:text-pink-500 transition-colors ${comment.user_has_liked ? 'text-pink-500' : ''}`}
+                              className={`flex items-center gap-1 transition-colors hover:text-pink-400 ${comment.user_has_liked ? "text-pink-400" : ""}`}
                             >
-                              <Heart className={`w-3.5 h-3.5 ${comment.user_has_liked ? 'fill-pink-500' : ''}`} />
-                              <span>{comment.likes_count > 0 ? comment.likes_count : 'Like'}</span>
+                              <Heart className={`w-3 h-3 ${comment.user_has_liked ? "fill-pink-400" : ""}`} />
+                              {comment.likes_count > 0 ? comment.likes_count : "Like"}
                             </button>
                             <button
-                              onClick={() => {
-                                setReplyToCommentId(isReplyingToThis ? null : comment.id)
-                                setReplyText("")
-                              }}
-                              className="flex items-center gap-1 hover:text-brand-400 transition-colors"
+                              onClick={() => { setReplyToCommentId(isReplyingToThis ? null : comment.id); setReplyText("") }}
+                              className="hover:text-brand-400 transition-colors"
                             >
-                              <MessageCircle className="w-3.5 h-3.5" />
-                              <span>Reply</span>
+                              Reply
                             </button>
                           </div>
                         </div>
                       </div>
 
-                      {/* Reply Form */}
+                      {/* Inline Reply Form */}
                       {isReplyingToThis && (
-                        <form onSubmit={(e) => handleSubmitReply(e, comment.id)} className="flex items-center gap-3 pl-11 animate-fade-in">
-                          <Avatar className="w-7 h-7 border border-surface-700">
-                            <AvatarFallback>You</AvatarFallback>
+                        <form onSubmit={(e) => handleSubmitReply(e, comment.id)} className="flex items-center gap-2.5 pl-10 animate-fade-in">
+                          <Avatar className="w-6 h-6 shrink-0 border border-brand-500/20">
+                            <AvatarFallback className="bg-surface-700 text-[9px] text-brand-400">You</AvatarFallback>
                           </Avatar>
-                          <div className="flex-1 flex gap-2 relative">
+                          <div className="flex-1 relative">
                             <Input
                               value={replyText}
                               onChange={(e) => setReplyText(e.target.value)}
-                              placeholder={`Reply to ${comment.author?.display_name}...`}
-                              className="bg-surface-900/50 border-surface-700/60 text-white placeholder:text-surface-500 rounded-full pl-4 pr-10 h-9 text-xs focus:border-brand-500/50 focus:bg-surface-800/80 transition-all"
+                              placeholder={`Reply to ${comment.author?.display_name}…`}
+                              className="bg-surface-900/60 border-surface-700/50 text-white placeholder:text-surface-500 rounded-full pl-3.5 pr-9 h-8 text-xs focus:border-brand-500/40 transition-all"
                               disabled={isSubmittingReply}
                               autoFocus
                             />
-                            <Button 
-                              type="submit" 
-                              size="icon" 
-                              variant="ghost"
+                            <button
+                              type="submit"
                               disabled={!replyText.trim() || isSubmittingReply}
-                              className="absolute right-1 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full text-brand-500 hover:text-brand-400 hover:bg-brand-500/10"
+                              className="absolute right-1.5 top-1/2 -translate-y-1/2 w-5.5 h-5.5 rounded-full text-brand-400 flex items-center justify-center disabled:opacity-30"
                             >
-                              <Send className="w-3.5 h-3.5" />
-                            </Button>
+                              <Send className="w-3 h-3" />
+                            </button>
                           </div>
                         </form>
                       )}
 
-                      {/* Replies List */}
+                      {/* Replies */}
                       {replies.length > 0 && (
-                        <div className="pl-11 space-y-3 border-l-2 border-surface-800/60 ml-4">
+                        <div className="pl-10 space-y-2.5 relative">
+                          <div className="absolute left-[18px] top-0 bottom-0 w-[1.5px] rounded-full"
+                            style={{ background: "linear-gradient(180deg, rgba(234,179,8,0.2) 0%, transparent 100%)" }} />
                           {replies.map((reply: any) => (
                             <div key={reply.id} className="flex items-start gap-2.5">
-                              <Avatar className="w-6.5 h-6.5 mt-0.5 shrink-0 border border-surface-700">
-                                <AvatarImage src={reply.author?.avatar_url || ""} />
-                                <AvatarFallback>{getInitials(reply.author?.display_name)}</AvatarFallback>
-                              </Avatar>
+                              <Link href={`/profile/${reply.author?.username}`} className="shrink-0 mt-0.5">
+                                <Avatar className="w-6 h-6 border border-surface-700 hover:border-brand-500/30 transition-colors">
+                                  <AvatarImage src={reply.author?.avatar_url || ""} />
+                                  <AvatarFallback className="bg-surface-700 text-[9px] text-brand-400 font-bold">
+                                    {getInitials(reply.author?.display_name)}
+                                  </AvatarFallback>
+                                </Avatar>
+                              </Link>
                               <div className="flex-1 space-y-1">
-                                <div className="bg-surface-800/20 border border-surface-700/20 rounded-xl rounded-tl-sm p-3 shadow-sm">
+                                <div
+                                  className="rounded-xl rounded-tl-sm px-3.5 py-2.5"
+                                  style={{
+                                    background: "rgba(255,255,255,0.03)",
+                                    border: "1px solid rgba(255,255,255,0.05)",
+                                  }}
+                                >
                                   <div className="flex items-baseline gap-2 mb-1">
                                     <Link href={`/profile/${reply.author?.username}`} className="text-[12px] font-bold text-white hover:text-brand-400 transition-colors">
                                       {reply.author?.display_name}
                                     </Link>
-                                    <span className="text-[10px] font-medium text-surface-500">{formatRelativeTime(reply.created_at)}</span>
+                                    <span className="text-[10px] text-surface-500">{formatRelativeTime(reply.created_at)}</span>
                                   </div>
-                                  <p className="text-xs text-surface-200 leading-normal">{reply.content}</p>
+                                  <p className="text-[12.5px] text-white/75 leading-relaxed">{reply.content}</p>
                                 </div>
-
-                                {/* Reply Actions */}
-                                <div className="flex items-center gap-3.5 text-[10px] font-semibold pl-1.5 text-surface-400">
+                                <div className="flex items-center gap-3 pl-1.5 text-[10px] font-semibold text-surface-500">
                                   <button
                                     onClick={() => handleCommentLike(reply.id)}
-                                    className={`flex items-center gap-1 hover:text-pink-500 transition-colors ${reply.user_has_liked ? 'text-pink-500' : ''}`}
+                                    className={`flex items-center gap-1 transition-colors hover:text-pink-400 ${reply.user_has_liked ? "text-pink-400" : ""}`}
                                   >
-                                    <Heart className={`w-3 h-3 ${reply.user_has_liked ? 'fill-pink-500' : ''}`} />
-                                    <span>{reply.likes_count > 0 ? reply.likes_count : 'Like'}</span>
+                                    <Heart className={`w-2.5 h-2.5 ${reply.user_has_liked ? "fill-pink-400" : ""}`} />
+                                    {reply.likes_count > 0 ? reply.likes_count : "Like"}
                                   </button>
                                   <button
-                                    onClick={() => {
-                                      setReplyToCommentId(comment.id)
-                                      setReplyText(`@${reply.author?.username} `)
-                                    }}
-                                    className="flex items-center gap-1 hover:text-brand-400 transition-colors"
+                                    onClick={() => { setReplyToCommentId(comment.id); setReplyText(`@${reply.author?.username} `) }}
+                                    className="hover:text-brand-400 transition-colors"
                                   >
-                                    <MessageCircle className="w-3 h-3" />
-                                    <span>Reply</span>
+                                    Reply
                                   </button>
                                 </div>
                               </div>
@@ -355,10 +379,12 @@ export function PostCard({ post, currentUserId }: PostCardProps) {
                 })}
             </div>
           ) : (
-            <p className="text-center text-surface-500 text-sm py-2">No comments yet. Be the first!</p>
+            <div className="text-center py-4">
+              <p className="text-surface-500 text-sm">No comments yet — be the first to respond! 💬</p>
+            </div>
           )}
         </div>
       )}
-    </div>
+    </article>
   )
 }
