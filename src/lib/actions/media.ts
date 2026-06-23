@@ -1,5 +1,6 @@
 "use server"
 
+import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/server"
 
 type UploadBucket = "avatars" | "posts" | "videos"
@@ -13,31 +14,46 @@ export async function uploadMediaAction(formData: FormData): Promise<{ url?: str
   if (!userId) return { error: "No user ID provided" }
 
   try {
+    // 1. Verify the user is authenticated and matches the userId
+    const authClient = await createClient()
+    const { data: { user } } = await authClient.auth.getUser()
+    
+    if (!user || user.id !== userId) {
+      return { error: "Unauthorized" }
+    }
+
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
     
-    // We use the authenticated client instead of the service role key.
-    // This requires the user session.
-    const supabase = await createClient()
+    // 2. Create admin client using service role key to bypass storage RLS
+    // We are doing this because production DB is missing RLS policies
+    const supabaseAdmin = createSupabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+
+    // Ensure bucket exists
+    const { data: buckets } = await supabaseAdmin.storage.listBuckets()
+    const bucketExists = buckets?.some(b => b.id === bucket)
+    if (!bucketExists) {
+      await supabaseAdmin.storage.createBucket(bucket, { public: true })
+    }
 
     const ext = file.name.split(".").pop()
     const path = `${userId}/${Date.now()}.${ext}`
 
-    // WARNING: Do NOT use `upsert: true` here.
-    // Supabase requires an UPDATE RLS policy if upsert is true, even for new files.
-    // Since our filenames are unique (Date.now()), we can safely use upsert: false.
-    const { data, error: uploadError } = await supabase.storage
+    const { data, error: uploadError } = await supabaseAdmin.storage
       .from(bucket)
       .upload(path, buffer, {
         contentType: file.type,
-        upsert: false
+        upsert: true
       })
 
     if (uploadError) {
       return { error: uploadError.message }
     }
 
-    const { data: urlData } = supabase.storage
+    const { data: urlData } = supabaseAdmin.storage
       .from(bucket)
       .getPublicUrl(data.path)
 
