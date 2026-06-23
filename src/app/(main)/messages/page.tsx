@@ -8,26 +8,11 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Loader2 } from "lucide-react"
 
-interface Conversation {
-  id: string
-  other_user: {
-    id: string
-    display_name: string
-    avatar_url: string | null
-  } | null
-  last_message: {
-    content: string
-    sender_id: string
-    created_at: string
-  } | null
-  is_unread: boolean
-}
-
 export default function MessagesPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const targetUserId = searchParams.get("user")
-  const [conversations, setConversations] = useState<Conversation[]>([])
+  const [conversations, setConversations] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
 
@@ -36,130 +21,131 @@ export default function MessagesPage() {
   }, [])
 
   useEffect(() => {
-    if (targetUserId && !creating) {
+    if (targetUserId) {
       createOrOpenConversation(targetUserId)
     }
   }, [targetUserId])
 
   const loadConversations = async () => {
+    setLoading(true)
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-
-    const { data: participantRows } = await supabase
-      .from("conversation_participants")
-      .select("conversation_id")
-      .eq("user_id", user.id)
-
-    if (!participantRows || participantRows.length === 0) {
+    if (!user) {
       setLoading(false)
       return
     }
 
-    const convoIds = participantRows.map((p: any) => p.conversation_id)
-
-    const { data: convos } = await supabase
-      .from("conversations")
-      .select("*")
-      .in("id", convoIds)
-
-    if (!convos) {
-      setLoading(false)
-      return
-    }
-
-    const result: Conversation[] = []
-
-    for (const convo of convos) {
-      const { data: participants } = await supabase
+    try {
+      const { data: myConvos } = await supabase
         .from("conversation_participants")
-        .select("user_id")
-        .eq("conversation_id", convo.id)
+        .select("conversation_id")
+        .eq("user_id", user.id)
 
-      const otherId = participants?.find((p: any) => p.user_id !== user.id)?.user_id
+      if (!myConvos || myConvos.length === 0) {
+        setConversations([])
+        setLoading(false)
+        return
+      }
 
-      if (!otherId) continue
+      const result: any[] = []
 
-      const { data: otherProfile } = await supabase
-        .from("profiles")
-        .select("id, display_name, avatar_url")
-        .eq("id", otherId)
-        .single()
+      for (const c of myConvos) {
+        const { data: others } = await supabase
+          .from("conversation_participants")
+          .select("user_id")
+          .eq("conversation_id", c.conversation_id)
+          .neq("user_id", user.id)
 
-      const { data: lastMsg } = await supabase
-        .from("messages")
-        .select("content, sender_id, created_at")
-        .eq("conversation_id", convo.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single()
+        if (!others || others.length === 0) continue
 
-      const { count: unreadCount } = await supabase
-        .from("messages")
-        .select("*", { count: "exact", head: true })
-        .eq("conversation_id", convo.id)
-        .neq("sender_id", user.id)
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("id, display_name, avatar_url")
+          .eq("id", others[0].user_id)
+          .single()
 
-      result.push({
-        id: convo.id,
-        other_user: otherProfile,
-        last_message: lastMsg,
-        is_unread: (unreadCount || 0) > 0,
+        const { data: lastMsg } = await supabase
+          .from("messages")
+          .select("content, sender_id, created_at")
+          .eq("conversation_id", c.conversation_id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single()
+
+        result.push({
+          id: c.conversation_id,
+          other_user: profile,
+          last_message: lastMsg,
+          is_unread: false,
+        })
+      }
+
+      result.sort((a, b) => {
+        if (!a.last_message) return 1
+        if (!b.last_message) return -1
+        return new Date(b.last_message.created_at).getTime() - new Date(a.last_message.created_at).getTime()
       })
+
+      setConversations(result)
+    } catch (err) {
+      console.error("Error loading conversations:", err)
     }
-
-    result.sort((a, b) => {
-      if (!a.last_message) return 1
-      if (!b.last_message) return -1
-      return new Date(b.last_message.created_at).getTime() - new Date(a.last_message.created_at).getTime()
-    })
-
-    setConversations(result)
     setLoading(false)
   }
 
   const createOrOpenConversation = async (otherUserId: string) => {
-    if (creating) return
     setCreating(true)
-
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    const { data: myParticipations } = await supabase
-      .from("conversation_participants")
-      .select("conversation_id")
-      .eq("user_id", user.id)
+    try {
+      const { data: myConvos } = await supabase
+        .from("conversation_participants")
+        .select("conversation_id")
+        .eq("user_id", user.id)
 
-    if (myParticipations) {
-      for (const p of myParticipations) {
-        const { data: otherParticipant } = await supabase
-          .from("conversation_participants")
-          .select("user_id")
-          .eq("conversation_id", p.conversation_id)
-          .neq("user_id", user.id)
-          .single()
+      if (myConvos) {
+        for (const c of myConvos) {
+          const { data: other } = await supabase
+            .from("conversation_participants")
+            .select("user_id")
+            .eq("conversation_id", c.conversation_id)
+            .neq("user_id", user.id)
+            .single()
 
-        if (otherParticipant?.user_id === otherUserId) {
-          router.push(`/messages/${p.conversation_id}`)
-          return
+          if (other?.user_id === otherUserId) {
+            router.push(`/messages/${c.conversation_id}`)
+            return
+          }
         }
       }
-    }
 
-    const { data: newConvo } = await supabase
-      .from("conversations")
-      .insert({})
-      .select()
-      .single()
+      const { data: newConvo } = await supabase
+        .from("conversations")
+        .insert({})
+        .select()
+        .single()
 
-    if (newConvo) {
-      await supabase.from("conversation_participants").insert([
-        { conversation_id: newConvo.id, user_id: user.id },
-        { conversation_id: newConvo.id, user_id: otherUserId },
-      ])
-      router.push(`/messages/${newConvo.id}`)
+      if (newConvo) {
+        await supabase.from("conversation_participants").insert([
+          { conversation_id: newConvo.id, user_id: user.id },
+          { conversation_id: newConvo.id, user_id: otherUserId },
+        ])
+        router.push(`/messages/${newConvo.id}`)
+      }
+    } catch (err) {
+      console.error("Error creating conversation:", err)
+      setCreating(false)
     }
+  }
+
+  if (creating) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-brand-500" />
+      </div>
+    )
   }
 
   return (
@@ -169,7 +155,7 @@ export default function MessagesPage() {
       </div>
 
       <div className="flex-1 bg-surface-900 border border-surface-800 rounded-xl overflow-y-auto">
-        {loading || creating ? (
+        {loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-brand-500" />
           </div>
@@ -184,24 +170,17 @@ export default function MessagesPage() {
               <Link 
                 key={convo.id} 
                 href={`/messages/${convo.id}`}
-                className={`flex items-center gap-4 p-4 hover:bg-surface-800 transition-colors ${
-                  convo.is_unread ? 'bg-surface-800/30' : ''
-                }`}
+                className="flex items-center gap-4 p-4 hover:bg-surface-800 transition-colors"
               >
-                <div className="relative">
-                  <Avatar className="w-12 h-12 border border-surface-700">
-                    <AvatarImage src={convo.other_user?.avatar_url || ""} />
-                    <AvatarFallback>{getInitials(convo.other_user?.display_name || "")}</AvatarFallback>
-                  </Avatar>
-                  {convo.is_unread && (
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-brand-500 rounded-full border-2 border-surface-900"></div>
-                  )}
-                </div>
+                <Avatar className="w-12 h-12 border border-surface-700">
+                  <AvatarImage src={convo.other_user?.avatar_url || ""} />
+                  <AvatarFallback>{getInitials(convo.other_user?.display_name || "")}</AvatarFallback>
+                </Avatar>
                 
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-baseline mb-1">
-                    <h3 className={`text-base truncate ${convo.is_unread ? 'font-bold text-white' : 'font-semibold text-surface-100'}`}>
-                      {convo.other_user?.display_name}
+                    <h3 className="text-base font-semibold text-surface-100 truncate">
+                      {convo.other_user?.display_name || "Unknown"}
                     </h3>
                     {convo.last_message && (
                       <span className="text-xs text-surface-400 shrink-0 ml-2">
@@ -209,7 +188,7 @@ export default function MessagesPage() {
                       </span>
                     )}
                   </div>
-                  <p className={`text-sm truncate ${convo.is_unread ? 'text-surface-200 font-medium' : 'text-surface-400'}`}>
+                  <p className="text-sm text-surface-400 truncate">
                     {convo.last_message 
                       ? (convo.last_message.sender_id === convo.other_user?.id ? "" : "You: ") + convo.last_message.content
                       : "Start a conversation"}
