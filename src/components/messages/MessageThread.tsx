@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, type FormEvent, type KeyboardEvent } from "react"
 import { useRealtimeMessages } from "@/hooks/useRealtimeMessages"
 import { sendMessage, sendVoiceMessage } from "@/lib/actions/messages"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -22,7 +22,7 @@ interface MessageThreadProps {
 }
 
 export function MessageThread({ conversationId, initialMessages, currentUserId, otherUser }: MessageThreadProps) {
-  const messages = useRealtimeMessages(conversationId, initialMessages)
+  const [messages, setMessages] = useRealtimeMessages(conversationId, initialMessages)
   const [content, setContent] = useState("")
   const [isSending, setIsSending] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
@@ -37,19 +37,26 @@ export function MessageThread({ conversationId, initialMessages, currentUserId, 
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
-  const handleSend = async (e: React.FormEvent) => {
+  const handleSend = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!content.trim() || isSending) return
 
     setIsSending(true)
-    const error = await sendMessage(conversationId, content)
+    const result = await sendMessage(conversationId, content)
     setIsSending(false)
-    
-    if (!error?.error) {
-      setContent("")
-    } else {
-      alert("Failed to send message: " + error.error)
+
+    if (result.error) {
+      alert("Failed to send message: " + result.error)
+      return
     }
+
+    setMessages((prev) => {
+      if (!result.data || prev.some((msg) => msg.id === result.data.id)) {
+        return prev
+      }
+      return [...prev, result.data]
+    })
+    setContent("")
   }
 
   const handleVoiceRecording = async (blob: Blob) => {
@@ -69,10 +76,12 @@ export function MessageThread({ conversationId, initialMessages, currentUserId, 
   }
 
   // Handle Enter to send
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      handleSend(e)
+      handleSend({
+        preventDefault: () => {},
+      } as FormEvent<HTMLFormElement>)
     }
   }
 

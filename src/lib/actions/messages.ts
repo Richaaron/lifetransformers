@@ -49,7 +49,7 @@ export async function getOrCreateConversation(targetUserId: string): Promise<Act
   return { data: { id: newConvo.id } }
 }
 
-export async function sendMessage(conversationId: string, content: string): Promise<ActionResult> {
+export async function sendMessage(conversationId: string, content: string): Promise<ActionResult<any>> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: "Unauthorized" }
@@ -58,15 +58,17 @@ export async function sendMessage(conversationId: string, content: string): Prom
 
   const finalContent = content.trim()
 
-  const { error } = await supabase
+  const { data: insertedMessage, error } = await supabase
     .from('messages')
     .insert({
       conversation_id: conversationId,
       sender_id: user.id,
       content: finalContent
     })
+    .select()
+    .single()
 
-  if (error) return { error: error.message }
+  if (error || !insertedMessage) return { error: error?.message || "Failed to send message" }
 
   // Update last_read_at for sender
   await supabase
@@ -75,7 +77,7 @@ export async function sendMessage(conversationId: string, content: string): Prom
     .eq('conversation_id', conversationId)
     .eq('user_id', user.id)
 
-  return {}
+  return { data: insertedMessage }
 }
 
 export async function markConversationRead(conversationId: string): Promise<ActionResult> {
@@ -117,7 +119,7 @@ export async function sendVoiceMessage(conversationId: string, audioBlob: Blob):
   if (!urlData?.publicUrl) return { error: "Failed to get audio URL" }
 
   // Insert message with audio URL
-  const { error } = await supabase
+  const { data: insertedMessage, error } = await supabase
     .from('messages')
     .insert({
       conversation_id: conversationId,
@@ -126,8 +128,10 @@ export async function sendVoiceMessage(conversationId: string, audioBlob: Blob):
       message_type: 'voice',
       audio_url: urlData.publicUrl
     })
+    .select()
+    .single()
 
-  if (error) return { error: error.message }
+  if (error || !insertedMessage) return { error: error?.message || "Failed to send voice message" }
 
   // Update last_read_at for sender
   await supabase
@@ -136,5 +140,5 @@ export async function sendVoiceMessage(conversationId: string, audioBlob: Blob):
     .eq('conversation_id', conversationId)
     .eq('user_id', user.id)
 
-  return {}
+  return { data: insertedMessage }
 }

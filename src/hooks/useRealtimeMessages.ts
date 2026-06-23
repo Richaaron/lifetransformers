@@ -1,12 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo, type Dispatch, type SetStateAction } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { markConversationRead } from "@/lib/actions/messages"
 
 export function useRealtimeMessages(conversationId: string, initialMessages: any[]) {
   const [messages, setMessages] = useState(initialMessages)
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
     // Mark as read when entering the thread
@@ -26,7 +26,6 @@ export function useRealtimeMessages(conversationId: string, initialMessages: any
           // A new message was inserted!
           const newMessage = payload.new
 
-          // Fetch sender profile details to match the initialMessages structure
           const { data: profile } = await supabase
             .from('profiles')
             .select('id, display_name, avatar_url')
@@ -41,7 +40,12 @@ export function useRealtimeMessages(conversationId: string, initialMessages: any
             sender: profile
           }
 
-          setMessages((prev) => [...prev, formattedMessage])
+          setMessages((prev) => {
+            if (prev.some((message) => message.id === newMessage.id)) {
+              return prev
+            }
+            return [...prev, formattedMessage]
+          })
           
           // Mark as read again since we are looking at the thread
           markConversationRead(conversationId)
@@ -54,5 +58,5 @@ export function useRealtimeMessages(conversationId: string, initialMessages: any
     }
   }, [conversationId, supabase])
 
-  return messages
+  return [messages, setMessages] as [any[], React.Dispatch<React.SetStateAction<any[]>>]
 }
