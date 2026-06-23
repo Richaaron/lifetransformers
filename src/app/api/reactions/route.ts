@@ -34,19 +34,21 @@ export async function POST(request: NextRequest) {
       .from("posts").select("author_id").eq("id", postId).single()
 
     if (post && post.author_id !== user.id) {
-      await supabase.from("notifications").insert({
-        user_id: post.author_id,
-        actor_id: user.id,
-        type: "post_like",
-        resource_id: postId,
-        resource_type: "post",
-      })
-      await supabase.rpc("add_xp", {
-        p_user_id: post.author_id,
-        p_amount: 2,
-        p_reason: "reaction_received",
-        p_reference_id: postId,
-      })
+      try {
+        await supabase.from("notifications").insert({
+          user_id: post.author_id,
+          actor_id: user.id,
+          type: "post_like",
+          resource_id: postId,
+          resource_type: "post",
+        })
+        await supabase.rpc("add_xp", {
+          p_user_id: post.author_id,
+          p_amount: 2,
+          p_reason: "reaction_received",
+          p_reference_id: postId,
+        })
+      } catch {}
     }
 
     return NextResponse.json({ reaction: reactionType })
