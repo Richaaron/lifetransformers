@@ -73,10 +73,20 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
 
   return (
     <div className="space-y-6">
-      <Card className="bg-surface-900 border-surface-800">
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row items-center gap-6">
-            <Avatar className="w-24 h-24">
+      <Card className="bg-surface-900 border-surface-800 overflow-hidden">
+        {/* Cover Banner */}
+        <div className="h-48 sm:h-64 relative bg-surface-800">
+          {profile.cover_url ? (
+            <img src={profile.cover_url} alt="Cover" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-brand-600/20 via-surface-800 to-brand-900/40" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-surface-900 via-surface-900/40 to-transparent" />
+        </div>
+
+        <CardContent className="pt-0 relative px-6 sm:px-10 pb-8">
+          <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 -mt-16 sm:-mt-20 relative z-10">
+            <Avatar className="w-32 h-32 sm:w-40 sm:h-40 border-4 border-surface-900 shadow-2xl bg-surface-800">
               <AvatarImage src={profile.avatar_url || ""} />
               <AvatarFallback className="text-2xl">{getInitials(profile.display_name)}</AvatarFallback>
             </Avatar>

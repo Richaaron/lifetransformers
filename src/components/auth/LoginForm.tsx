@@ -22,16 +22,16 @@ export function LoginForm() {
 
       <form action={formAction} className="space-y-5">
         <div className="space-y-2">
-          <Label htmlFor="email" className="text-surface-200 text-sm font-medium">Email address</Label>
+          <Label htmlFor="identifier" className="text-surface-200 text-sm font-medium">Username or Email address</Label>
           <div className="relative">
             <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
             <Input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
+              id="identifier"
+              name="identifier"
+              type="text"
+              autoComplete="username"
               required
-              placeholder="you@example.com"
+              placeholder="username or you@example.com"
               className="pl-10 h-12 bg-surface-800/50 border-surface-700/60 focus:border-brand-500/60 transition-all duration-200"
             />
           </div>

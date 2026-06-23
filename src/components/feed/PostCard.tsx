@@ -6,7 +6,10 @@ import { Input } from "@/components/ui/input"
 import { getInitials, formatRelativeTime } from "@/lib/utils"
 import { Heart, MessageCircle, MoreHorizontal, Trash2, Send, ChevronDown, ChevronUp } from "lucide-react"
 import Link from "next/link"
-import { toggleLike, deletePost, addComment, getComments, toggleCommentLike } from "@/lib/actions/posts"
+import { deletePost, addComment, getComments, toggleCommentLike } from "@/lib/actions/posts"
+import { RichTextContent } from "@/components/feed/RichTextContent"
+import { ReactionBar } from "@/components/feed/ReactionBar"
+import type { ReactionType } from "@/lib/actions/reactions"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,12 +20,20 @@ import {
 interface PostCardProps {
   post: any
   currentUserId: string
+  reactionSummary?: {
+    counts: Record<ReactionType, number>
+    userReaction: ReactionType | null
+    total: number
+  }
 }
 
-export function PostCard({ post, currentUserId }: PostCardProps) {
-  const [isLiked, setIsLiked] = useState(post.user_has_liked)
-  const [likesCount, setLikesCount] = useState(post.likes_count)
-  const [isLiking, setIsLiking] = useState(false)
+const DEFAULT_REACTION_SUMMARY = {
+  counts: { amen: 0, love: 0, praying: 0, inspired: 0, like: 0 } as Record<ReactionType, number>,
+  userReaction: null as ReactionType | null,
+  total: 0,
+}
+
+export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps) {
   const [isDeleting, setIsDeleting] = useState(false)
   const [showComments, setShowComments] = useState(false)
   const [comments, setComments] = useState<any[]>([])
@@ -35,15 +46,6 @@ export function PostCard({ post, currentUserId }: PostCardProps) {
   const [isSubmittingReply, setIsSubmittingReply] = useState(false)
 
   const isAuthor = post.author_id === currentUserId
-
-  const handleLike = async () => {
-    if (isLiking) return
-    setIsLiked(!isLiked)
-    setLikesCount(isLiked ? likesCount - 1 : likesCount + 1)
-    setIsLiking(true)
-    await toggleLike(post.id)
-    setIsLiking(false)
-  }
 
   const handleDelete = async () => {
     if (confirm("Are you sure you want to delete this post?")) {
@@ -169,8 +171,11 @@ export function PostCard({ post, currentUserId }: PostCardProps) {
           )}
         </div>
 
-        {/* Content */}
-        <p className="text-[15px] text-white/85 leading-relaxed whitespace-pre-wrap mb-4">{post.content}</p>
+        {/* Content — hashtags and @mentions rendered as clickable links */}
+        <RichTextContent
+          content={post.content}
+          className="text-[15px] text-white/85 mb-4"
+        />
 
         {/* Post Image */}
         {post.image_url && (
@@ -187,16 +192,12 @@ export function PostCard({ post, currentUserId }: PostCardProps) {
         )}
 
         {/* Reaction Row */}
-        <div className="flex items-center gap-2 pt-4 border-t border-white/[0.05]">
-          {/* Like Button */}
-          <button
-            onClick={handleLike}
-            disabled={isLiking}
-            className={`btn-reaction press-effect ${isLiked ? "liked" : "default"}`}
-          >
-            <Heart className={`w-4 h-4 transition-all duration-200 ${isLiked ? "fill-pink-400 scale-110" : ""}`} />
-            <span>{likesCount > 0 ? likesCount : "Like"}</span>
-          </button>
+        <div className="flex items-center gap-2 pt-4 border-t border-white/[0.05] flex-wrap">
+          {/* Faith Reactions */}
+          <ReactionBar
+            postId={post.id}
+            initialSummary={reactionSummary ?? DEFAULT_REACTION_SUMMARY}
+          />
 
           {/* Comment Toggle Button */}
           <button

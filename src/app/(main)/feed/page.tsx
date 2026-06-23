@@ -1,8 +1,11 @@
 import { Metadata } from "next"
 import { getFeed } from "@/lib/queries/feed"
 import { PostComposer } from "@/components/feed/PostComposer"
-import { PostCard } from "@/components/feed/PostCard"
+import { InfiniteFeed } from "@/components/feed/InfiniteFeed"
+import { FeedSkeleton } from "@/components/feed/LoadingSkeleton"
+import { Suspense } from "react"
 import { createClient } from "@/lib/supabase/server"
+import type { ReactionType } from "@/lib/actions/reactions"
 import Image from "next/image"
 
 export const metadata: Metadata = {
@@ -21,7 +24,42 @@ export default async function FeedPage() {
     .eq("id", user.id)
     .single()
 
-  const feed = await getFeed()
+  // We fetch only the first page server-side
+  const limit = 10
+  const feed = (await getFeed()).slice(0, limit)
+  const hasMoreInitial = (await getFeed()).length > limit
+
+  // Batch-fetch reaction summaries for all posts in one query
+  const postIds = feed.map((p: any) => p.id)
+  let reactionMap: Record<string, {
+    counts: Record<ReactionType, number>
+    userReaction: ReactionType | null
+    total: number
+  }> = {}
+
+  if (postIds.length > 0) {
+    const { data: reactions } = await supabase
+      .from("post_reactions")
+      .select("post_id, user_id, reaction_type")
+      .in("post_id", postIds)
+
+    for (const r of reactions || []) {
+      const pid = r.post_id
+      if (!reactionMap[pid]) {
+        reactionMap[pid] = {
+          counts: { amen: 0, love: 0, praying: 0, inspired: 0, like: 0 },
+          userReaction: null,
+          total: 0,
+        }
+      }
+      const entry = reactionMap[pid]
+      entry.counts[r.reaction_type as ReactionType] = (entry.counts[r.reaction_type as ReactionType] || 0) + 1
+      entry.total++
+      if (r.user_id === user.id) {
+        entry.userReaction = r.reaction_type as ReactionType
+      }
+    }
+  }
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto pb-12">
@@ -51,22 +89,15 @@ export default async function FeedPage() {
         </div>
       )}
 
-      <div className="space-y-6 pt-4 animate-fade-up delay-200">
-        {feed.length === 0 ? (
-          <div className="glass-strong border border-surface-800 rounded-2xl p-12 text-center">
-            <div className="w-16 h-16 rounded-full bg-surface-800 flex items-center justify-center mx-auto mb-4 shadow-inner">
-              <span className="text-2xl">🌱</span>
-            </div>
-            <h3 className="text-xl font-bold text-white mb-2">Welcome to the network!</h3>
-            <p className="text-surface-400">No posts yet. Start the conversation by sharing something above.</p>
-          </div>
-        ) : (
-          feed.map((post: any, i: number) => (
-            <div key={post.id} className="animate-fade-up" style={{ animationDelay: `${Math.min(i * 100, 500)}ms` }}>
-              <PostCard post={post} currentUserId={user.id} />
-            </div>
-          ))
-        )}
+      <div className="pt-4">
+        <Suspense fallback={<FeedSkeleton />}>
+          <InfiniteFeed
+            initialPosts={feed}
+            initialReactionMap={reactionMap}
+            currentUserId={user.id}
+            hasMoreInitial={hasMoreInitial}
+          />
+        </Suspense>
       </div>
     </div>
   )

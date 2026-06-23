@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useCallback, useEffect } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Textarea } from "@/components/ui/textarea"
-import { Image as ImageIcon, Video, X, Loader2, Sparkles } from "lucide-react"
+import { Image as ImageIcon, Video, X, Loader2, Sparkles, Hash, AtSign } from "lucide-react"
 import { uploadMediaAction } from "@/lib/actions/media"
 import { formatFileSize } from "@/lib/utils/file-upload"
 import { getInitials } from "@/lib/utils"
+import { tokeniseContent, extractHashtags, extractMentions } from "@/lib/utils/content-parser"
+import { createClient } from "@/lib/supabase/client"
 
 interface PostComposerProps {
   currentUser: {
@@ -25,6 +26,13 @@ const INSPIRING_PLACEHOLDERS = [
   "Inspire someone today — what's your reflection?",
 ]
 
+interface MentionSuggestion {
+  id: string
+  username: string
+  display_name: string
+  avatar_url: string | null
+}
+
 export function PostComposer({ currentUser, groupId }: PostComposerProps) {
   const [content, setContent] = useState("")
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -34,9 +42,114 @@ export function PostComposer({ currentUser, groupId }: PostComposerProps) {
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
+
+  // Mention autocomplete
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null)
+  const [mentionSuggestions, setMentionSuggestions] = useState<MentionSuggestion[]>([])
+  const [mentionLoading, setMentionLoading] = useState(false)
+  const [activeSuggestion, setActiveSuggestion] = useState(0)
+
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const videoInputRef = useRef<HTMLInputElement>(null)
+
   const placeholder = INSPIRING_PLACEHOLDERS[Math.floor(Math.random() * INSPIRING_PLACEHOLDERS.length)]
+
+  // Auto-resize textarea
+  const autoResize = useCallback(() => {
+    const el = textareaRef.current
+    if (!el) return
+    el.style.height = "auto"
+    el.style.height = `${Math.min(el.scrollHeight, 280)}px`
+  }, [])
+
+  // Detect @mention trigger in textarea
+  const detectMentionTrigger = useCallback((text: string, cursorPos: number) => {
+    const before = text.slice(0, cursorPos)
+    const mentionMatch = before.match(/@([a-zA-Z0-9_]*)$/)
+    if (mentionMatch) {
+      setMentionQuery(mentionMatch[1])
+    } else {
+      setMentionQuery(null)
+      setMentionSuggestions([])
+    }
+  }, [])
+
+  // Fetch mention suggestions from Supabase
+  useEffect(() => {
+    if (mentionQuery === null) return
+    const timeout = setTimeout(async () => {
+      setMentionLoading(true)
+      const supabase = createClient()
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, username, display_name, avatar_url")
+        .ilike("username", `${mentionQuery}%`)
+        .neq("id", currentUser.id)
+        .limit(5)
+      setMentionSuggestions(data || [])
+      setMentionLoading(false)
+      setActiveSuggestion(0)
+    }, 150)
+    return () => clearTimeout(timeout)
+  }, [mentionQuery, currentUser.id])
+
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value
+    setContent(val)
+    autoResize()
+    detectMentionTrigger(val, e.target.selectionStart ?? val.length)
+  }
+
+  const insertMention = (username: string) => {
+    const textarea = textareaRef.current
+    if (!textarea) return
+    const cursorPos = textarea.selectionStart ?? content.length
+    const before = content.slice(0, cursorPos)
+    const after = content.slice(cursorPos)
+    // Replace the partial @query with the full @username + space
+    const newBefore = before.replace(/@([a-zA-Z0-9_]*)$/, `@${username} `)
+    const newContent = newBefore + after
+    setContent(newContent)
+    setMentionQuery(null)
+    setMentionSuggestions([])
+    // Restore focus and set cursor after inserted text
+    setTimeout(() => {
+      textarea.focus()
+      const newPos = newBefore.length
+      textarea.setSelectionRange(newPos, newPos)
+      autoResize()
+    }, 0)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (mentionSuggestions.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault()
+        setActiveSuggestion(i => Math.min(i + 1, mentionSuggestions.length - 1))
+        return
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault()
+        setActiveSuggestion(i => Math.max(i - 1, 0))
+        return
+      }
+      if (e.key === "Enter" || e.key === "Tab") {
+        e.preventDefault()
+        insertMention(mentionSuggestions[activeSuggestion].username)
+        return
+      }
+      if (e.key === "Escape") {
+        setMentionQuery(null)
+        setMentionSuggestions([])
+        return
+      }
+    }
+    // Cmd/Ctrl+Enter submits
+    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+      handleSubmit()
+    }
+  }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: "image" | "video") => {
     const file = e.target.files?.[0]
@@ -86,7 +199,14 @@ export function PostComposer({ currentUser, groupId }: PostComposerProps) {
       const res = await fetch("/api/posts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: textContent, mediaUrl, mediaType, groupId: groupId || null }),
+        body: JSON.stringify({
+          content: textContent,
+          mediaUrl,
+          mediaType,
+          groupId: groupId || null,
+          hashtags: extractHashtags(textContent),
+          mentions: extractMentions(textContent),
+        }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -105,9 +225,26 @@ export function PostComposer({ currentUser, groupId }: PostComposerProps) {
     setIsSubmitting(false)
   }
 
+  // Render highlighted preview layer (underneath transparent textarea)
+  const renderHighlighted = () => {
+    const tokens = tokeniseContent(content)
+    return tokens.map((token, i) => {
+      if (token.type === "hashtag") {
+        return <mark key={i} className="bg-brand-500/20 text-brand-400 rounded px-0.5 not-italic">{token.value}</mark>
+      }
+      if (token.type === "mention") {
+        return <mark key={i} className="bg-purple-500/20 text-purple-400 rounded px-0.5 not-italic">{token.value}</mark>
+      }
+      return <span key={i} className="text-transparent">{token.value}</span>
+    })
+  }
+
+  const charCount = content.length
+  const MAX_CHARS = 1000
+
   return (
     <div
-      className="relative rounded-2xl overflow-hidden transition-all duration-300"
+      className="relative rounded-2xl overflow-visible transition-all duration-300"
       style={{
         background: "linear-gradient(145deg, rgba(16,14,28,0.85) 0%, rgba(10,10,20,0.75) 100%)",
         backdropFilter: "blur(24px)",
@@ -117,7 +254,6 @@ export function PostComposer({ currentUser, groupId }: PostComposerProps) {
           : "0 4px 24px rgba(0,0,0,0.4)",
       }}
     >
-      {/* Top accent line when focused */}
       {isFocused && (
         <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-brand-500/60 to-transparent" />
       )}
@@ -132,15 +268,73 @@ export function PostComposer({ currentUser, groupId }: PostComposerProps) {
           </Avatar>
 
           <div className="flex-1 min-w-0 space-y-3">
-            <Textarea
-              placeholder={placeholder}
-              className="min-h-[52px] resize-none border-none bg-transparent px-0 pt-2.5 pb-1 focus-visible:ring-0 text-[15px] text-white/90 placeholder:text-surface-500 leading-relaxed"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
-              disabled={isSubmitting}
-            />
+            {/* Rich text input container */}
+            <div className="relative min-h-[52px]">
+              {/* Highlight layer — rendered under the textarea */}
+              <div
+                aria-hidden="true"
+                className="absolute inset-0 pt-2.5 pb-1 px-0 text-[15px] leading-relaxed pointer-events-none whitespace-pre-wrap break-words"
+                style={{ fontFamily: "inherit" }}
+              >
+                {renderHighlighted()}
+                {/* Invisible trailing char to keep height correct */}
+                <span className="text-transparent">⠀</span>
+              </div>
+
+              {/* Actual transparent textarea */}
+              <textarea
+                ref={textareaRef}
+                placeholder={placeholder}
+                className="relative w-full resize-none bg-transparent px-0 pt-2.5 pb-1 text-[15px] text-white/90 placeholder:text-surface-500 leading-relaxed focus:outline-none caret-brand-400 overflow-hidden"
+                style={{ minHeight: "52px", fontFamily: "inherit", caretColor: "#EAB308" }}
+                value={content}
+                onChange={handleContentChange}
+                onKeyDown={handleKeyDown}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => {
+                  setIsFocused(false)
+                  setTimeout(() => setMentionSuggestions([]), 200)
+                }}
+                disabled={isSubmitting}
+                maxLength={MAX_CHARS}
+              />
+            </div>
+
+            {/* @Mention autocomplete dropdown */}
+            {mentionSuggestions.length > 0 && (
+              <div
+                className="absolute z-50 w-72 rounded-xl overflow-hidden shadow-2xl border border-white/10 animate-fade-up"
+                style={{
+                  background: "rgba(14,12,26,0.96)",
+                  backdropFilter: "blur(24px)",
+                  boxShadow: "0 8px 40px rgba(0,0,0,0.6)",
+                }}
+              >
+                {mentionSuggestions.map((user, i) => (
+                  <button
+                    key={user.id}
+                    onMouseDown={(e) => { e.preventDefault(); insertMention(user.username) }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${
+                      i === activeSuggestion ? "bg-white/[0.08]" : "hover:bg-white/[0.05]"
+                    }`}
+                  >
+                    <Avatar className="w-8 h-8 shrink-0">
+                      <AvatarImage src={user.avatar_url || ""} />
+                      <AvatarFallback className="text-xs">{getInitials(user.display_name)}</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-white truncate">{user.display_name}</p>
+                      <p className="text-xs text-surface-400 truncate">@{user.username}</p>
+                    </div>
+                  </button>
+                ))}
+                {mentionLoading && (
+                  <div className="flex items-center justify-center p-3">
+                    <Loader2 className="w-4 h-4 animate-spin text-surface-400" />
+                  </div>
+                )}
+              </div>
+            )}
 
             {previewUrl && (
               <div className="relative rounded-xl overflow-hidden border border-surface-700/60 shadow-md">
@@ -186,27 +380,60 @@ export function PostComposer({ currentUser, groupId }: PostComposerProps) {
                   <Video className="w-4 h-4" />
                   <span className="hidden sm:inline">Video</span>
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setContent(c => c + "#"); textareaRef.current?.focus() }}
+                  disabled={isSubmitting}
+                  title="Add hashtag"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-surface-400 hover:text-brand-400 hover:bg-brand-500/10 text-sm font-medium transition-all duration-200 press-effect disabled:opacity-40"
+                >
+                  <Hash className="w-4 h-4" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setContent(c => c + "@"); textareaRef.current?.focus() }}
+                  disabled={isSubmitting}
+                  title="Mention someone"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-surface-400 hover:text-purple-400 hover:bg-purple-500/10 text-sm font-medium transition-all duration-200 press-effect disabled:opacity-40"
+                >
+                  <AtSign className="w-4 h-4" />
+                </button>
               </div>
 
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={(!content.trim() && !selectedFile) || isSubmitting}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-gradient-to-r from-brand-500 to-amber-500 text-surface-950 font-bold text-sm shadow-[0_4px_16px_rgba(234,179,8,0.3)] hover:shadow-[0_4px_24px_rgba(234,179,8,0.5)] hover:from-brand-400 hover:to-amber-400 transition-all duration-200 press-effect disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <>
-                    <Sparkles className="w-3.5 h-3.5" />
-                    Share
-                  </>
+              <div className="flex items-center gap-3">
+                {isFocused && (
+                  <span className={`text-xs tabular-nums ${charCount > MAX_CHARS * 0.9 ? "text-red-400" : "text-surface-600"}`}>
+                    {charCount}/{MAX_CHARS}
+                  </span>
                 )}
-              </button>
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={(!content.trim() && !selectedFile) || isSubmitting || charCount > MAX_CHARS}
+                  className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-gradient-to-r from-brand-500 to-amber-500 text-surface-950 font-bold text-sm shadow-[0_4px_16px_rgba(234,179,8,0.3)] hover:shadow-[0_4px_24px_rgba(234,179,8,0.5)] hover:from-brand-400 hover:to-amber-400 transition-all duration-200 press-effect disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Sparkles className="w-3.5 h-3.5" />
+                      Share
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
 
             {error && <p className="text-xs text-red-400 mt-1 animate-fade-in">{error}</p>}
             {success && <p className="text-xs text-emerald-400 mt-1 animate-fade-in">✨ Posted successfully!</p>}
+            {isFocused && !mentionSuggestions.length && (
+              <p className="text-[11px] text-surface-600">
+                Use <span className="text-brand-500">#hashtags</span> and{" "}
+                <span className="text-purple-400">@mentions</span> · Ctrl+Enter to post
+              </p>
+            )}
           </div>
         </div>
       </div>

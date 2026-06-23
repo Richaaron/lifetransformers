@@ -10,7 +10,9 @@ import { createClient } from "@/lib/supabase/client"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { getInitials } from "@/lib/utils"
 import Image from "next/image"
-import { useNotifications } from "@/components/providers/NotificationProvider"
+import { NotificationBadge } from "@/components/layout/NotificationBadge"
+import { MessageBadge } from "@/components/layout/MessageBadge"
+import { ThemeToggle } from "@/components/theme/ThemeToggle"
 
 const navItems = [
   { name: "Feed",          href: "/feed",          icon: Home },
@@ -19,12 +21,11 @@ const navItems = [
   { name: "Groups",        href: "/groups",        icon: Users },
   { name: "Leaderboard",   href: "/leaderboard",   icon: Trophy },
   { name: "Notifications", href: "/notifications", icon: Bell },
-  { name: "Search",        href: "/search",        icon: Search },
+  { name: "Explore",       href: "/explore",       icon: Search },
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { unreadCount } = useNotifications()
   const [profile, setProfile] = useState<any>(null)
   const [totalXp, setTotalXp] = useState(0)
 
@@ -41,10 +42,10 @@ export function Sidebar() {
 
         supabase
           .from("user_progress")
-          .select("total_xp")
+          .select("xp")
           .eq("user_id", user.id)
           .single()
-          .then(({ data }) => { if (data) setTotalXp(data.total_xp || 0) })
+          .then(({ data }) => { if (data) setTotalXp(data.xp || 0) })
       }
     })
   }, [])
@@ -100,11 +101,8 @@ export function Sidebar() {
                   "w-[18px] h-[18px] transition-all duration-200 shrink-0",
                   isActive ? "text-brand-400" : "group-hover:text-white"
                 )} />
-                {isNotif && unreadCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-gradient-to-br from-red-500 to-red-600 text-white text-[9px] font-bold flex items-center justify-center shadow-md shadow-red-900/40">
-                    {unreadCount > 9 ? "9+" : unreadCount}
-                  </span>
-                )}
+                {isNotif && <NotificationBadge />}
+                {item.href === "/messages" && <MessageBadge />}
               </div>
               <span>{item.name}</span>
 
@@ -134,46 +132,48 @@ export function Sidebar() {
         )}
       </nav>
 
-      {/* Community Impact Widget */}
+      {/* Community Impact Widget & Bottom Actions */}
       {profile && (
-        <div className="mx-3 mb-3 rounded-2xl p-4 glass-warm border border-brand-500/10 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 rounded-full pointer-events-none -translate-y-8 translate-x-8"
-            style={{ background: "radial-gradient(circle, rgba(234,179,8,0.1) 0%, transparent 70%)" }} />
-          
-          <div className="flex items-center gap-3 mb-3">
-            <div className="relative shrink-0">
-              <Avatar className="w-9 h-9 border-2 border-brand-500/40 shadow-[0_0_10px_rgba(234,179,8,0.2)]">
-                <AvatarImage src={profile.avatar_url || ""} />
-                <AvatarFallback className="bg-surface-700 text-xs text-brand-400 font-bold">
-                  {getInitials(profile.display_name)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-surface-900" />
+        <div className="mx-3 mb-3">
+          <div className="rounded-2xl p-4 glass-warm border border-brand-500/10 relative overflow-hidden mb-3">
+            <div className="absolute top-0 right-0 w-24 h-24 rounded-full pointer-events-none -translate-y-8 translate-x-8"
+              style={{ background: "radial-gradient(circle, rgba(234,179,8,0.1) 0%, transparent 70%)" }} />
+            
+            <div className="flex items-center gap-3 mb-3">
+              <div className="relative shrink-0">
+                <Avatar className="w-9 h-9 border-2 border-brand-500/40 shadow-[0_0_10px_rgba(234,179,8,0.2)]">
+                  <AvatarImage src={profile.avatar_url || ""} />
+                  <AvatarFallback className="bg-surface-700 text-xs text-brand-400 font-bold">
+                    {getInitials(profile.display_name)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-surface-900" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-white truncate">{profile.display_name}</p>
+                <p className={cn("text-[10px] font-semibold uppercase tracking-wider", tier.color)}>{tier.label}</p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <p className="text-xs font-bold text-white truncate">{profile.display_name}</p>
-              <p className={cn("text-[10px] font-semibold uppercase tracking-wider", tier.color)}>{tier.label}</p>
-            </div>
-          </div>
 
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-surface-400 font-medium flex items-center gap-1">
-                <Zap className="w-2.5 h-2.5 text-brand-500" />
-                Community Impact
-              </span>
-              <span className="text-[10px] font-bold text-brand-400">{totalXp.toLocaleString()} pts</span>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-surface-400 font-medium flex items-center gap-1">
+                  <Zap className="w-2.5 h-2.5 text-brand-500" />
+                  Community Impact
+                </span>
+                <span className="text-[10px] font-bold text-brand-400">{totalXp.toLocaleString()} pts</span>
+              </div>
+              <div className="progress-bar-track">
+                <div className="progress-bar-fill" style={{ width: `${progress}%` }} />
+              </div>
+              <p className="text-[9px] text-surface-500 text-right">{tier.max - totalXp > 0 ? `${(tier.max - totalXp).toLocaleString()} pts to next tier` : "Max tier reached!"}</p>
             </div>
-            <div className="progress-bar-track">
-              <div className="progress-bar-fill" style={{ width: `${progress}%` }} />
-            </div>
-            <p className="text-[9px] text-surface-500 text-right">{tier.max - totalXp > 0 ? `${(tier.max - totalXp).toLocaleString()} pts to next tier` : "Max tier reached!"}</p>
           </div>
         </div>
       )}
 
       {/* Bottom Actions */}
-      <div className="px-3 pb-4 border-t border-white/[0.05] pt-3 space-y-1">
+      <div className="px-3 pb-4 border-t border-white/[0.05] pt-3 flex flex-col gap-1">
         <Link
           href="/profile/edit"
           className="nav-link text-surface-400 hover:text-white"
@@ -188,6 +188,9 @@ export function Sidebar() {
           <LogOut className="w-[18px] h-[18px]" />
           <span>Sign Out</span>
         </button>
+        <div className="mt-2 flex items-center justify-center">
+          <ThemeToggle />
+        </div>
       </div>
     </aside>
   )
