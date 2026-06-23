@@ -7,6 +7,7 @@ import { getInitials, formatRelativeTime } from "@/lib/utils"
 import { markNotificationRead, markAllNotificationsRead } from "@/lib/actions/notifications"
 import { UserPlus, UserCheck, Heart, MessageCircle, Users } from "lucide-react"
 import Link from "next/link"
+import { useNotifications } from "@/components/providers/NotificationProvider"
 
 interface NotificationListProps {
   notifications: any[]
@@ -14,15 +15,18 @@ interface NotificationListProps {
 
 export function NotificationList({ notifications }: NotificationListProps) {
   const [isPending, startTransition] = useTransition()
+  const { decrementUnreadCount, markAllAsRead } = useNotifications()
 
   const handleMarkAllRead = () => {
     startTransition(() => {
       markAllNotificationsRead()
+      markAllAsRead()
     })
   }
 
   const handleNotificationClick = (id: string, read: boolean) => {
     if (!read) {
+      decrementUnreadCount()
       startTransition(() => {
         markNotificationRead(id)
       })
@@ -79,8 +83,8 @@ export function NotificationList({ notifications }: NotificationListProps) {
   }
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl overflow-hidden">
-      <div className="p-4 border-b border-surface-800 flex justify-end">
+    <div className="glass-strong border border-white/5 rounded-2xl overflow-hidden shadow-xl animate-fade-in">
+      <div className="p-4 border-b border-surface-700/50 flex justify-end bg-surface-900/30">
         <Button 
           variant="ghost" 
           size="sm" 
@@ -100,11 +104,11 @@ export function NotificationList({ notifications }: NotificationListProps) {
               key={notification.id}
               href={content.href}
               onClick={() => handleNotificationClick(notification.id, notification.read)}
-              className={`flex items-start gap-4 p-4 hover:bg-surface-800 transition-colors ${
-                !notification.read ? 'bg-surface-800/30' : ''
+              className={`flex items-start gap-4 p-5 hover:bg-surface-800/60 transition-all ${
+                !notification.read ? 'bg-brand-500/5 hover:bg-brand-500/10' : ''
               }`}
             >
-              <Avatar className="w-10 h-10 mt-1 shrink-0">
+              <Avatar className="w-12 h-12 mt-0.5 shrink-0 border border-surface-700">
                 <AvatarImage src={notification.actor?.avatar_url || ""} />
                 <AvatarFallback>{getInitials(notification.actor?.display_name)}</AvatarFallback>
               </Avatar>

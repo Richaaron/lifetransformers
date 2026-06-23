@@ -1,0 +1,115 @@
+"use client"
+
+import { createContext, useContext, useEffect, useState } from "react"
+import { createClient } from "@/lib/supabase/client"
+import { toast } from "sonner"
+import { Bell } from "lucide-react"
+
+interface NotificationContextType {
+  unreadCount: number
+  decrementUnreadCount: () => void
+  markAllAsRead: () => void
+}
+
+const NotificationContext = createContext<NotificationContextType>({
+  unreadCount: 0,
+  decrementUnreadCount: () => {},
+  markAllAsRead: () => {},
+})
+
+export const useNotifications = () => useContext(NotificationContext)
+
+export function NotificationProvider({ 
+  children, 
+  currentUserId 
+}: { 
+  children: React.ReactNode
+  currentUserId: string | null 
+}) {
+  const [unreadCount, setUnreadCount] = useState(0)
+  const supabase = createClient()
+
+  useEffect(() => {
+    if (!currentUserId) return
+
+    // 1. Fetch initial unread count
+    const fetchUnreadCount = async () => {
+      const { count, error } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', currentUserId)
+        .eq('read', false)
+      
+      if (!error && count !== null) {
+        setUnreadCount(count)
+      }
+    }
+    fetchUnreadCount()
+
+    // 2. Subscribe to realtime inserts on the notifications table
+    const channel = supabase
+      .channel('realtime-notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${currentUserId}`,
+        },
+        async (payload) => {
+          // Increment unread count
+          setUnreadCount((prev) => prev + 1)
+          
+          const newNotification = payload.new
+
+          // Fetch the actor's profile to display their name
+          const { data: actor } = await supabase
+            .from('profiles')
+            .select('display_name, avatar_url')
+            .eq('id', newNotification.actor_id)
+            .single()
+
+          const actorName = actor?.display_name || 'Someone'
+
+          // Display toast
+          let title = "New Notification"
+          let description = ""
+
+          if (newNotification.type === 'comment') {
+            title = "New Comment"
+            description = `${actorName} commented on your post`
+          } else if (newNotification.type === 'message') {
+            title = "New Message"
+            description = `${actorName} sent you a message`
+          }
+
+          toast(title, {
+            description,
+            icon: <Bell className="w-4 h-4 text-brand-500" />,
+            duration: 5000,
+            className: "glass-strong border border-surface-700/50 text-white",
+          })
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [currentUserId, supabase])
+
+  const decrementUnreadCount = () => {
+    setUnreadCount((prev) => Math.max(0, prev - 1))
+  }
+
+  const markAllAsRead = () => {
+    setUnreadCount(0)
+  }
+
+  return (
+    <NotificationContext.Provider value={{ unreadCount, decrementUnreadCount, markAllAsRead }}>
+      {children}
+    </NotificationContext.Provider>
+  )
+}

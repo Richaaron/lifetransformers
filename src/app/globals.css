@@ -15,10 +15,31 @@
 
   body {
     background-color: #080810;
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(234, 179, 8, 0.07) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.05) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(234, 179, 8, 0.05) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, rgba(99, 102, 241, 0.07) 0px, transparent 50%);
+    background-attachment: fixed;
     color: #f1f1f8;
     font-family: 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    position: relative;
+  }
+  
+  /* Global animated ambient light */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 50% 50%, rgba(234, 179, 8, 0.03), transparent 60%);
+    animation: ambient-spin 30s linear infinite;
+    pointer-events: none;
+    z-index: -1;
   }
 
   h1, h2, h3 {
@@ -65,6 +86,12 @@
 @keyframes spin-slow {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
+}
+@keyframes ambient-spin {
+  0% { transform: rotate(0deg) scale(1) translate(0, 0); }
+  33% { transform: rotate(120deg) scale(1.1) translate(2%, 2%); }
+  66% { transform: rotate(240deg) scale(0.9) translate(-2%, -2%); }
+  100% { transform: rotate(360deg) scale(1) translate(0, 0); }
 }
 @keyframes glow-pulse {
   0%, 100% { box-shadow: 0 0 20px rgba(234,179,8,0.2); }
