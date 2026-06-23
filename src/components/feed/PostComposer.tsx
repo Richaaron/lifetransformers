@@ -1,8 +1,6 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { useActionState } from "react"
-import { createPost } from "@/lib/actions/posts"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -10,11 +8,7 @@ import { Image as ImageIcon, Video, X, Loader2 } from "lucide-react"
 import { uploadFile, formatFileSize } from "@/lib/utils/file-upload"
 import { containsCurseWords } from "@/lib/utils/word-filter"
 import { createClient } from "@/lib/supabase/client"
-import type { ActionResult } from "@/lib/types"
-
-const initialState: ActionResult = {
-  error: "",
-}
+import { revalidatePath } from "next/cache"
 
 interface PostComposerProps {
   currentUser: {
@@ -26,13 +20,13 @@ interface PostComposerProps {
 }
 
 export function PostComposer({ currentUser, groupId }: PostComposerProps) {
-  const [state, formAction, isPending] = useActionState(createPost, initialState)
   const [content, setContent] = useState("")
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState("")
   const [fileType, setFileType] = useState<"image" | "video" | null>(null)
-  const [uploading, setUploading] = useState(false)
-  const [uploadProgress, setUploadProgress] = useState(0)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const videoInputRef = useRef<HTMLInputElement>(null)
 
@@ -42,13 +36,14 @@ export function PostComposer({ currentUser, groupId }: PostComposerProps) {
 
     const maxSize = type === "video" ? 50 * 1024 * 1024 : 10 * 1024 * 1024
     if (file.size > maxSize) {
-      alert(`File must be less than ${type === "video" ? "50MB" : "10MB"}`)
+      setError(`File must be less than ${type === "video" ? "50MB" : "10MB"}`)
       return
     }
 
     setSelectedFile(file)
     setFileType(type)
     setPreviewUrl(URL.createObjectURL(file))
+    setError("")
   }
 
   const removeFile = () => {
@@ -59,7 +54,7 @@ export function PostComposer({ currentUser, groupId }: PostComposerProps) {
     if (videoInputRef.current) videoInputRef.current.value = ""
   }
 
-  const handleSubmit = async (formData: FormData) => {
+  const handleSubmit = async () => {
     const textContent = content.trim()
     
     if (!textContent && !selectedFile) return
@@ -67,21 +62,23 @@ export function PostComposer({ currentUser, groupId }: PostComposerProps) {
     const { hasCurse, filtered } = containsCurseWords(textContent)
     if (hasCurse) {
       setContent(filtered)
-      alert("Your post contains inappropriate language. It has been filtered.")
+      setError("Your post contains inappropriate language. It has been filtered.")
       return
     }
 
-    setUploading(true)
+    setIsSubmitting(true)
+    setError("")
+
     let mediaUrl = ""
     let mediaType = ""
 
-    if (selectedFile && currentUser.id) {
+    if (selectedFile) {
       const bucket = fileType === "video" ? "videos" : "posts"
-      const { url, error } = await uploadFile(selectedFile, bucket, currentUser.id)
+      const { url, error: uploadError } = await uploadFile(selectedFile, bucket, currentUser.id)
       
-      if (error) {
-        alert("Failed to upload file: " + error)
-        setUploading(false)
+      if (uploadError) {
+        setError("Failed to upload file: " + uploadError)
+        setIsSubmitting(false)
         return
       }
       
@@ -89,26 +86,41 @@ export function PostComposer({ currentUser, groupId }: PostComposerProps) {
       mediaType = fileType || ""
     }
 
-    setUploading(false)
+    try {
+      const res = await fetch("/api/posts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: textContent,
+          mediaUrl,
+          mediaType,
+          groupId: groupId || null,
+        }),
+      })
 
-    formData.set("content", textContent)
-    formData.set("mediaUrl", mediaUrl)
-    formData.set("mediaType", mediaType)
-    if (groupId) formData.set("groupId", groupId)
+      const data = await res.json()
 
-    formAction(formData)
-    setContent("")
-    removeFile()
+      if (!res.ok) {
+        setError(data.error || "Failed to create post")
+        setIsSubmitting(false)
+        return
+      }
+
+      setContent("")
+      removeFile()
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 2000)
+      window.location.reload()
+    } catch (err) {
+      setError("Failed to create post")
+    }
+    
+    setIsSubmitting(false)
   }
 
   return (
     <div className="bg-surface-900 border border-surface-800 rounded-xl p-4 transition-all focus-within:shadow-glow-gold/10 focus-within:border-brand-500/30">
-      <form 
-        action={handleSubmit}
-        className="flex gap-4"
-      >
-        {groupId && <input type="hidden" name="groupId" value={groupId} />}
-        
+      <div className="flex gap-4">
         <Avatar className="w-10 h-10 mt-1 shrink-0">
           <AvatarImage src={currentUser.avatar_url || ""} />
           <AvatarFallback>{currentUser.display_name.charAt(0)}</AvatarFallback>
@@ -116,12 +128,11 @@ export function PostComposer({ currentUser, groupId }: PostComposerProps) {
         
         <div className="flex-1 space-y-3 min-w-0">
           <Textarea
-            name="content"
             placeholder="Share something with your network..."
             className="min-h-[60px] resize-none border-none bg-transparent px-0 py-2 focus-visible:ring-0 text-base"
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            disabled={isPending || uploading}
+            disabled={isSubmitting}
           />
 
           {previewUrl && (
@@ -174,7 +185,7 @@ export function PostComposer({ currentUser, groupId }: PostComposerProps) {
                 size="sm" 
                 className="text-surface-400 hover:text-brand-500 gap-2"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
+                disabled={isSubmitting}
               >
                 <ImageIcon className="w-4 h-4" />
                 <span className="hidden sm:inline">Photo</span>
@@ -185,7 +196,7 @@ export function PostComposer({ currentUser, groupId }: PostComposerProps) {
                 size="sm" 
                 className="text-surface-400 hover:text-brand-500 gap-2"
                 onClick={() => videoInputRef.current?.click()}
-                disabled={uploading}
+                disabled={isSubmitting}
               >
                 <Video className="w-4 h-4" />
                 <span className="hidden sm:inline">Video</span>
@@ -193,11 +204,12 @@ export function PostComposer({ currentUser, groupId }: PostComposerProps) {
             </div>
             
             <Button 
-              type="submit" 
-              disabled={(!content.trim() && !selectedFile) || isPending || uploading}
+              type="button" 
+              onClick={handleSubmit}
+              disabled={(!content.trim() && !selectedFile) || isSubmitting}
               className="rounded-full px-6"
             >
-              {(isPending || uploading) ? (
+              {isSubmitting ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 "Post"
@@ -205,11 +217,14 @@ export function PostComposer({ currentUser, groupId }: PostComposerProps) {
             </Button>
           </div>
           
-          {state?.error && (
-            <p className="text-sm text-destructive mt-2">{state.error}</p>
+          {error && (
+            <p className="text-sm text-red-400 mt-2">{error}</p>
+          )}
+          {success && (
+            <p className="text-sm text-green-400 mt-2">Post created!</p>
           )}
         </div>
-      </form>
+      </div>
     </div>
   )
 }
