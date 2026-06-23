@@ -9,9 +9,10 @@ import { createClient } from "@/lib/supabase/client"
 import { Loader2 } from "lucide-react"
 import { usePresence } from "@/hooks/usePresence"
 import { OnlineIndicator } from "@/components/ui/OnlineIndicator"
+import { Suspense } from "react"
 import { useChat } from "@/components/providers/ChatProvider"
 
-export default function MessagesPage() {
+function MessagesPageInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const targetUserId = searchParams.get("user")
@@ -235,5 +236,17 @@ export default function MessagesPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function MessagesPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-brand-500" />
+      </div>
+    }>
+      <MessagesPageInner />
+    </Suspense>
   )
 }
