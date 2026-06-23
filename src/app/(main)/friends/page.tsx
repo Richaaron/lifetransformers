@@ -4,12 +4,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { FriendCard } from "@/components/friends/FriendCard"
 import { sendFriendRequest, acceptFriendRequest, rejectFriendRequest, unfriend } from "@/lib/actions/friends"
 import { revalidatePath } from "next/cache"
+import { createClient } from "@/lib/supabase/server"
 
 export const metadata: Metadata = {
   title: "Friends - Life Transformers",
 }
 
 export default async function FriendsPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const currentUserId = user?.id ?? ""
+
   const [friends, requests, suggested] = await Promise.all([
     getFriends(),
     getPendingRequests(),

@@ -13,6 +13,8 @@ import { AudioPlayer } from "./AudioPlayer"
 import { VoiceCallModal } from "./VoiceCallModal"
 import { LanguageSelector } from "./LanguageSelector"
 import { TranslateButton } from "./TranslateButton"
+import { usePresence } from "@/hooks/usePresence"
+import { OnlineIndicator } from "@/components/ui/OnlineIndicator"
 
 interface MessageThreadProps {
   conversationId: string
@@ -31,6 +33,7 @@ export function MessageThread({ conversationId, initialMessages, currentUserId, 
   const [callType, setCallType] = useState<"voice" | "video">("voice")
   const [targetLanguage, setTargetLanguage] = useState("en")
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const { isOnline } = usePresence(currentUserId)
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -90,13 +93,24 @@ export function MessageThread({ conversationId, initialMessages, currentUserId, 
       {/* Header */}
       <div className="h-16 border-b border-surface-800 bg-surface-950 flex items-center justify-between px-6 shrink-0">
         <div className="flex items-center gap-3">
-          <Avatar className="w-10 h-10 border border-surface-700">
-            <AvatarImage src={otherUser.avatar_url || ""} />
-            <AvatarFallback>{getInitials(otherUser.display_name)}</AvatarFallback>
-          </Avatar>
+          <div className="relative">
+            <Avatar className="w-10 h-10 border border-surface-700">
+              <AvatarImage src={otherUser.avatar_url || ""} />
+              <AvatarFallback>{getInitials(otherUser.display_name)}</AvatarFallback>
+            </Avatar>
+            <OnlineIndicator
+              isOnline={isOnline(otherUser.id)}
+              size="sm"
+              className="absolute bottom-0 right-0 ring-2 ring-surface-950 rounded-full"
+            />
+          </div>
           <div>
             <h2 className="font-semibold text-white">{otherUser.display_name}</h2>
-            <p className="text-xs text-surface-400">Online</p>
+            <OnlineIndicator
+              isOnline={isOnline(otherUser.id)}
+              size="sm"
+              showLabel
+            />
           </div>
         </div>
 

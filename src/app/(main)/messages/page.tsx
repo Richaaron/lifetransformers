@@ -7,6 +7,8 @@ import { getInitials, formatRelativeTime } from "@/lib/utils"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Loader2 } from "lucide-react"
+import { usePresence } from "@/hooks/usePresence"
+import { OnlineIndicator } from "@/components/ui/OnlineIndicator"
 
 export default function MessagesPage() {
   const router = useRouter()
@@ -15,8 +17,14 @@ export default function MessagesPage() {
   const [conversations, setConversations] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const { isOnline } = usePresence(currentUserId)
 
   useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setCurrentUserId(user.id)
+    })
     if (targetUserId) {
       startConversation(targetUserId)
     } else {
@@ -181,10 +189,17 @@ export default function MessagesPage() {
                 href={`/messages/${convo.id}`}
                 className="flex items-center gap-4 p-4 hover:bg-surface-800 transition-colors"
               >
-                <Avatar className="w-12 h-12 border border-surface-700">
-                  <AvatarImage src={convo.other_user?.avatar_url || ""} />
-                  <AvatarFallback>{getInitials(convo.other_user?.display_name || "")}</AvatarFallback>
-                </Avatar>
+                <div className="relative shrink-0">
+                  <Avatar className="w-12 h-12 border border-surface-700">
+                    <AvatarImage src={convo.other_user?.avatar_url || ""} />
+                    <AvatarFallback>{getInitials(convo.other_user?.display_name || "")}</AvatarFallback>
+                  </Avatar>
+                  <OnlineIndicator
+                    isOnline={isOnline(convo.other_user?.id)}
+                    size="md"
+                    className="absolute bottom-0 right-0 ring-2 ring-surface-900 rounded-full"
+                  />
+                </div>
                 
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-baseline mb-1">
