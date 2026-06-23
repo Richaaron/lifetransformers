@@ -11,7 +11,8 @@ import { getInitials } from "@/lib/utils"
 import { Loader2, CheckCircle, Camera, X } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
-import { uploadFile, formatFileSize } from "@/lib/utils/file-upload"
+import { uploadMediaAction } from "@/lib/actions/media"
+import { formatFileSize } from "@/lib/utils/file-upload"
 
 export default function EditProfilePage() {
   const router = useRouter()
@@ -126,7 +127,11 @@ export default function EditProfilePage() {
 
     if (selectedFile) {
       setIsUploading(true)
-      const { url, error: uploadError } = await uploadFile(selectedFile, "avatars", userId)
+      const formData = new FormData()
+      formData.append("file", selectedFile)
+      formData.append("bucket", "avatars")
+      formData.append("userId", userId)
+      const { url, error: uploadError } = await uploadMediaAction(formData)
       setIsUploading(false)
 
       if (uploadError) {

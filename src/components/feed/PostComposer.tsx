@@ -5,7 +5,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Image as ImageIcon, Video, X, Loader2 } from "lucide-react"
-import { uploadFile, formatFileSize } from "@/lib/utils/file-upload"
+import { uploadMediaAction } from "@/lib/actions/media"
+import { formatFileSize } from "@/lib/utils/file-upload"
 
 interface PostComposerProps {
   currentUser: {
@@ -64,7 +65,11 @@ export function PostComposer({ currentUser, groupId }: PostComposerProps) {
 
     if (selectedFile) {
       const bucket = fileType === "video" ? "videos" : "posts"
-      const { url, error: uploadError } = await uploadFile(selectedFile, bucket, currentUser.id)
+      const formData = new FormData()
+      formData.append("file", selectedFile)
+      formData.append("bucket", bucket)
+      formData.append("userId", currentUser.id)
+      const { url, error: uploadError } = await uploadMediaAction(formData)
       
       if (uploadError) {
         setError("Failed to upload file: " + uploadError)
