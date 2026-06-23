@@ -121,7 +121,7 @@ export async function deletePost(postId: string): Promise<ActionResult> {
   return {}
 }
 
-export async function addComment(postId: string, content: string): Promise<ActionResult> {
+export async function addComment(postId: string, content: string, parentId?: string | null): Promise<ActionResult> {
   if (!content || content.trim().length === 0) {
     return { error: "Comment cannot be empty" }
   }
@@ -132,34 +132,57 @@ export async function addComment(postId: string, content: string): Promise<Actio
 
   const finalContent = content.trim()
 
-  const { error } = await supabase
+  const { data: newComment, error } = await supabase
     .from("comments")
     .insert({
       post_id: postId,
       author_id: user.id,
       content: finalContent,
+      parent_id: parentId || null
     })
+    .select("id")
+    .single()
 
   if (error) return { error: error.message }
 
-  // Award XP for creating a comment
+  // Award XP for creating a comment/reply
   await supabase.rpc("add_xp", {
     p_user_id: user.id,
-    p_amount: 5,
-    p_reason: "comment_created",
+    p_amount: parentId ? 7 : 5,
+    p_reason: parentId ? "reply_created" : "comment_created",
     p_reference_id: postId,
   })
 
-  // Notify post author
-  const { data: post } = await supabase.from("posts").select("author_id").eq("id", postId).single()
-  if (post && post.author_id !== user.id) {
-    await supabase.from("notifications").insert({
-      user_id: post.author_id,
-      actor_id: user.id,
-      type: "post_comment",
-      resource_id: postId,
-      resource_type: "post"
-    })
+  // Notifications
+  if (parentId) {
+    // Notify parent comment author
+    const { data: parentComment } = await supabase
+      .from("comments")
+      .select("author_id")
+      .eq("id", parentId)
+      .single()
+
+    if (parentComment && parentComment.author_id !== user.id) {
+      await supabase.from("notifications").insert({
+        user_id: parentComment.author_id,
+        actor_id: user.id,
+        type: "comment_reply",
+        resource_id: postId, // using postId so clicking the notification links to the feed where post is
+        resource_type: "post"
+      })
+    }
+  } else {
+    // Notify post author
+    const { data: post } = await supabase.from("posts").select("author_id").eq("id", postId).single()
+    if (post && post.author_id !== user.id) {
+      await supabase.from("notifications").insert({
+        user_id: post.author_id,
+        actor_id: user.id,
+        type: "post_comment",
+        resource_id: postId,
+        resource_type: "post"
+      })
+    }
   }
 
   revalidatePath("/feed")
@@ -171,7 +194,7 @@ export async function getComments(postId: string) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return []
 
-  const { data: comments } = await supabase
+  const { data: comments, error } = await supabase
     .from("comments")
     .select(`
       id,
@@ -179,10 +202,74 @@ export async function getComments(postId: string) {
       author_id,
       content,
       created_at,
-      author:profiles!comments_author_id_fkey(id, username, display_name, avatar_url)
+      parent_id,
+      author:profiles!comments_author_id_fkey(id, username, display_name, avatar_url),
+      comment_likes(user_id)
     `)
     .eq("post_id", postId)
     .order("created_at", { ascending: true })
 
-  return comments || []
+  if (error) {
+    console.error("Error fetching comments:", error)
+    return []
+  }
+
+  // Map to include user_has_liked and likes_count
+  const processedComments = (comments || []).map((comment: any) => {
+    const likes = comment.comment_likes || []
+    const userHasLiked = likes.some((like: any) => like.user_id === user.id)
+    return {
+      ...comment,
+      likes_count: likes.length,
+      user_has_liked: userHasLiked,
+    }
+  })
+
+  return processedComments
+}
+
+export async function toggleCommentLike(commentId: string): Promise<ActionResult> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: "Unauthorized" }
+
+  // Check if already liked
+  const { data: existingLike } = await supabase
+    .from("comment_likes")
+    .select("comment_id")
+    .eq("comment_id", commentId)
+    .eq("user_id", user.id)
+    .single()
+
+  if (existingLike) {
+    // Unlike
+    await supabase.from("comment_likes").delete().eq("comment_id", commentId).eq("user_id", user.id)
+  } else {
+    // Like
+    const { error: likeError } = await supabase.from("comment_likes").insert({ comment_id: commentId, user_id: user.id })
+    if (likeError) return { error: likeError.message }
+
+    // Notify comment author and award XP
+    const { data: comment } = await supabase.from("comments").select("id, author_id, post_id").eq("id", commentId).single()
+    if (comment && comment.author_id !== user.id) {
+      await supabase.from("notifications").insert({
+        user_id: comment.author_id,
+        actor_id: user.id,
+        type: "comment_like",
+        resource_id: comment.post_id, // Link to the post
+        resource_type: "post"
+      })
+      
+      // Award XP to comment author for receiving a like
+      await supabase.rpc("add_xp", {
+        p_user_id: comment.author_id,
+        p_amount: 2,
+        p_reason: "comment_like_received",
+        p_reference_id: commentId,
+      })
+    }
+  }
+
+  revalidatePath("/feed")
+  return {}
 }

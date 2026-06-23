@@ -76,12 +76,32 @@ export function NotificationProvider({
           let title = "New Notification"
           let description = ""
 
-          if (newNotification.type === 'comment') {
+          if (newNotification.type === 'comment' || newNotification.type === 'post_comment') {
             title = "New Comment"
             description = `${actorName} commented on your post`
+          } else if (newNotification.type === 'comment_reply') {
+            title = "New Reply"
+            description = `${actorName} replied to your comment`
+          } else if (newNotification.type === 'comment_like') {
+            title = "Comment Liked"
+            description = `${actorName} liked your comment`
+          } else if (newNotification.type === 'post_like' || newNotification.type === 'like') {
+            title = "Post Liked"
+            description = `${actorName} liked your post`
           } else if (newNotification.type === 'message') {
             title = "New Message"
             description = `${actorName} sent you a message`
+          } else if (newNotification.type === 'friend_request') {
+            title = "Friend Request"
+            description = `${actorName} sent you a friend request`
+          } else if (newNotification.type === 'friend_accepted') {
+            title = "Friend Request Accepted"
+            description = `${actorName} accepted your friend request`
+          } else if (newNotification.type === 'group_invite') {
+            title = "Group Invite"
+            description = `${actorName} invited you to a group`
+          } else {
+            description = `${actorName} interacted with you`
           }
 
           toast(title, {

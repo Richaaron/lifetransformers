@@ -48,15 +48,29 @@ export function NotificationList({ notifications }: NotificationListProps) {
           href: "/friends"
         }
       case 'post_like':
+      case 'like':
         return {
           icon: <Heart className="w-4 h-4 text-pink-500 fill-pink-500" />,
           text: <span><strong>{actorName}</strong> liked your post.</span>,
-          href: "/feed" // Could link to specific post if we had a single post view
+          href: "/feed"
+        }
+      case 'comment_like':
+        return {
+          icon: <Heart className="w-4 h-4 text-pink-500 fill-pink-500" />,
+          text: <span><strong>{actorName}</strong> liked your comment.</span>,
+          href: "/feed"
         }
       case 'post_comment':
+      case 'comment':
         return {
           icon: <MessageCircle className="w-4 h-4 text-blue-500" />,
           text: <span><strong>{actorName}</strong> commented on your post.</span>,
+          href: "/feed"
+        }
+      case 'comment_reply':
+        return {
+          icon: <MessageCircle className="w-4 h-4 text-blue-500" />,
+          text: <span><strong>{actorName}</strong> replied to your comment.</span>,
           href: "/feed"
         }
       case 'group_invite':

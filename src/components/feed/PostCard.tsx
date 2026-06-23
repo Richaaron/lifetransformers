@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { getInitials, formatRelativeTime } from "@/lib/utils"
 import { Heart, MessageCircle, MoreHorizontal, Trash2, Send } from "lucide-react"
 import Link from "next/link"
-import { toggleLike, deletePost, addComment, getComments } from "@/lib/actions/posts"
+import { toggleLike, deletePost, addComment, getComments, toggleCommentLike } from "@/lib/actions/posts"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,6 +30,10 @@ export function PostCard({ post, currentUserId }: PostCardProps) {
   const [commentText, setCommentText] = useState("")
   const [isSubmittingComment, setIsSubmittingComment] = useState(false)
   const [commentsCount, setCommentsCount] = useState(post.comments_count)
+  
+  const [replyToCommentId, setReplyToCommentId] = useState<string | null>(null)
+  const [replyText, setReplyText] = useState("")
+  const [isSubmittingReply, setIsSubmittingReply] = useState(false)
 
   const isAuthor = post.author_id === currentUserId
 
@@ -76,6 +80,47 @@ export function PostCard({ post, currentUserId }: PostCardProps) {
     }
     
     setIsSubmittingComment(false)
+  }
+
+  const handleCommentLike = async (commentId: string) => {
+    // Optimistic update
+    setComments(prevComments =>
+      prevComments.map(c => {
+        if (c.id === commentId) {
+          const userHasLiked = !c.user_has_liked
+          return {
+            ...c,
+            user_has_liked: userHasLiked,
+            likes_count: userHasLiked ? c.likes_count + 1 : Math.max(0, c.likes_count - 1)
+          }
+        }
+        return c
+      })
+    )
+
+    const result = await toggleCommentLike(commentId)
+    if (result?.error) {
+      // Revert/refresh on error
+      const fetchedComments = await getComments(post.id)
+      setComments(fetchedComments)
+    }
+  }
+
+  const handleSubmitReply = async (e: React.FormEvent, parentId: string) => {
+    e.preventDefault()
+    if (!replyText.trim() || isSubmittingReply) return
+
+    setIsSubmittingReply(true)
+    const result = await addComment(post.id, replyText, parentId)
+
+    if (!result.error) {
+      const fetchedComments = await getComments(post.id)
+      setComments(fetchedComments)
+      setReplyText("")
+      setReplyToCommentId(null)
+      setCommentsCount(commentsCount + 1)
+    }
+    setIsSubmittingReply(false)
   }
 
   if (isDeleting) return null
@@ -183,24 +228,131 @@ export function PostCard({ post, currentUserId }: PostCardProps) {
 
           {/* Comments List */}
           {comments.length > 0 ? (
-            <div className="space-y-4 pl-2">
-              {comments.map((comment: any, i: number) => (
-                <div key={comment.id} className="flex items-start gap-3 animate-fade-up" style={{ animationDelay: `${i * 50}ms` }}>
-                  <Avatar className="w-8 h-8 mt-1 border border-surface-700">
-                    <AvatarImage src={comment.author?.avatar_url || ""} />
-                    <AvatarFallback>{getInitials(comment.author?.display_name)}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 bg-surface-800/40 border border-surface-700/30 rounded-2xl rounded-tl-sm p-3.5 shadow-sm">
-                    <div className="flex items-baseline gap-2 mb-1.5">
-                      <Link href={`/profile/${comment.author?.username}`} className="text-[13px] font-bold text-white hover:text-brand-400 transition-colors">
-                        {comment.author?.display_name}
-                      </Link>
-                      <span className="text-[11px] font-medium text-surface-500">{formatRelativeTime(comment.created_at)}</span>
+            <div className="space-y-6 pl-2">
+              {comments
+                .filter((c: any) => !c.parent_id)
+                .map((comment: any, i: number) => {
+                  const replies = comments.filter((r: any) => r.parent_id === comment.id)
+                  const isReplyingToThis = replyToCommentId === comment.id
+
+                  return (
+                    <div key={comment.id} className="space-y-3 animate-fade-up" style={{ animationDelay: `${i * 50}ms` }}>
+                      {/* Main Comment */}
+                      <div className="flex items-start gap-3">
+                        <Avatar className="w-8 h-8 mt-1 shrink-0 border border-surface-700">
+                          <AvatarImage src={comment.author?.avatar_url || ""} />
+                          <AvatarFallback>{getInitials(comment.author?.display_name)}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 space-y-1">
+                          <div className="bg-surface-800/40 border border-surface-700/30 rounded-2xl rounded-tl-sm p-3.5 shadow-sm">
+                            <div className="flex items-baseline gap-2 mb-1.5">
+                              <Link href={`/profile/${comment.author?.username}`} className="text-[13px] font-bold text-white hover:text-brand-400 transition-colors">
+                                {comment.author?.display_name}
+                              </Link>
+                              <span className="text-[11px] font-medium text-surface-500">{formatRelativeTime(comment.created_at)}</span>
+                            </div>
+                            <p className="text-sm text-surface-200 leading-snug">{comment.content}</p>
+                          </div>
+                          
+                          {/* Comment Actions */}
+                          <div className="flex items-center gap-4 text-xs font-semibold pl-2 text-surface-400">
+                            <button
+                              onClick={() => handleCommentLike(comment.id)}
+                              className={`flex items-center gap-1 hover:text-pink-500 transition-colors ${comment.user_has_liked ? 'text-pink-500' : ''}`}
+                            >
+                              <Heart className={`w-3.5 h-3.5 ${comment.user_has_liked ? 'fill-pink-500' : ''}`} />
+                              <span>{comment.likes_count > 0 ? comment.likes_count : 'Like'}</span>
+                            </button>
+                            <button
+                              onClick={() => {
+                                setReplyToCommentId(isReplyingToThis ? null : comment.id)
+                                setReplyText("")
+                              }}
+                              className="flex items-center gap-1 hover:text-brand-400 transition-colors"
+                            >
+                              <MessageCircle className="w-3.5 h-3.5" />
+                              <span>Reply</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Reply Form */}
+                      {isReplyingToThis && (
+                        <form onSubmit={(e) => handleSubmitReply(e, comment.id)} className="flex items-center gap-3 pl-11 animate-fade-in">
+                          <Avatar className="w-7 h-7 border border-surface-700">
+                            <AvatarFallback>You</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 flex gap-2 relative">
+                            <Input
+                              value={replyText}
+                              onChange={(e) => setReplyText(e.target.value)}
+                              placeholder={`Reply to ${comment.author?.display_name}...`}
+                              className="bg-surface-900/50 border-surface-700/60 text-white placeholder:text-surface-500 rounded-full pl-4 pr-10 h-9 text-xs focus:border-brand-500/50 focus:bg-surface-800/80 transition-all"
+                              disabled={isSubmittingReply}
+                              autoFocus
+                            />
+                            <Button 
+                              type="submit" 
+                              size="icon" 
+                              variant="ghost"
+                              disabled={!replyText.trim() || isSubmittingReply}
+                              className="absolute right-1 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full text-brand-500 hover:text-brand-400 hover:bg-brand-500/10"
+                            >
+                              <Send className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        </form>
+                      )}
+
+                      {/* Replies List */}
+                      {replies.length > 0 && (
+                        <div className="pl-11 space-y-3 border-l-2 border-surface-800/60 ml-4">
+                          {replies.map((reply: any) => (
+                            <div key={reply.id} className="flex items-start gap-2.5">
+                              <Avatar className="w-6.5 h-6.5 mt-0.5 shrink-0 border border-surface-700">
+                                <AvatarImage src={reply.author?.avatar_url || ""} />
+                                <AvatarFallback>{getInitials(reply.author?.display_name)}</AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 space-y-1">
+                                <div className="bg-surface-800/20 border border-surface-700/20 rounded-xl rounded-tl-sm p-3 shadow-sm">
+                                  <div className="flex items-baseline gap-2 mb-1">
+                                    <Link href={`/profile/${reply.author?.username}`} className="text-[12px] font-bold text-white hover:text-brand-400 transition-colors">
+                                      {reply.author?.display_name}
+                                    </Link>
+                                    <span className="text-[10px] font-medium text-surface-500">{formatRelativeTime(reply.created_at)}</span>
+                                  </div>
+                                  <p className="text-xs text-surface-200 leading-normal">{reply.content}</p>
+                                </div>
+
+                                {/* Reply Actions */}
+                                <div className="flex items-center gap-3.5 text-[10px] font-semibold pl-1.5 text-surface-400">
+                                  <button
+                                    onClick={() => handleCommentLike(reply.id)}
+                                    className={`flex items-center gap-1 hover:text-pink-500 transition-colors ${reply.user_has_liked ? 'text-pink-500' : ''}`}
+                                  >
+                                    <Heart className={`w-3 h-3 ${reply.user_has_liked ? 'fill-pink-500' : ''}`} />
+                                    <span>{reply.likes_count > 0 ? reply.likes_count : 'Like'}</span>
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setReplyToCommentId(comment.id)
+                                      setReplyText(`@${reply.author?.username} `)
+                                    }}
+                                    className="flex items-center gap-1 hover:text-brand-400 transition-colors"
+                                  >
+                                    <MessageCircle className="w-3 h-3" />
+                                    <span>Reply</span>
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    <p className="text-sm text-surface-200 leading-snug">{comment.content}</p>
-                  </div>
-                </div>
-              ))}
+                  )
+                })}
             </div>
           ) : (
             <p className="text-center text-surface-500 text-sm py-2">No comments yet. Be the first!</p>
