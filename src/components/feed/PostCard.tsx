@@ -81,16 +81,16 @@ export function PostCard({ post, currentUserId }: PostCardProps) {
   if (isDeleting) return null
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl p-4 sm:p-6 transition-all hover:border-surface-700">
+    <div className="glass rounded-2xl p-5 sm:p-7 transition-all duration-300 hover:shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:border-white/10 group">
       <div className="flex items-center justify-between mb-4">
-        <Link href={`/profile/${post.author.username}`} className="flex items-center gap-3">
-          <Avatar className="w-10 h-10">
+        <Link href={`/profile/${post.author.username}`} className="flex items-center gap-3 group/author">
+          <Avatar className="w-12 h-12 border border-surface-700 shadow-sm transition-transform duration-300 group-hover/author:scale-105 group-hover/author:border-brand-500/50">
             <AvatarImage src={post.author.avatar_url || ""} />
             <AvatarFallback>{getInitials(post.author.display_name)}</AvatarFallback>
           </Avatar>
           <div>
-            <h4 className="font-semibold text-white hover:underline">{post.author.display_name}</h4>
-            <p className="text-xs text-surface-400">{formatRelativeTime(post.created_at)}</p>
+            <h4 className="font-bold text-white text-base group-hover/author:text-brand-400 transition-colors">{post.author.display_name}</h4>
+            <p className="text-xs text-surface-400 font-medium">{formatRelativeTime(post.created_at)}</p>
           </div>
         </Link>
         
@@ -115,58 +115,58 @@ export function PostCard({ post, currentUserId }: PostCardProps) {
       </div>
       
       <div className="space-y-4">
-        <p className="text-surface-100 whitespace-pre-wrap">{post.content}</p>
+        <p className="text-surface-100 whitespace-pre-wrap text-[15px] leading-relaxed">{post.content}</p>
         
         {post.image_url && (
-          <div className="rounded-lg overflow-hidden border border-surface-800 mt-3">
+          <div className="rounded-xl overflow-hidden border border-surface-700/50 mt-4 shadow-md group-hover:border-white/10 transition-colors">
             <img 
               src={post.image_url} 
               alt="Post attachment" 
-              className="w-full h-auto object-cover max-h-96"
+              className="w-full h-auto object-cover max-h-[500px]"
             />
           </div>
         )}
       </div>
       
-      <div className="flex items-center justify-between pt-4 mt-4 border-t border-surface-800/50">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between pt-4 mt-5 border-t border-surface-700/40">
+        <div className="flex items-center gap-1 sm:gap-2">
           <Button 
             variant="ghost" 
             size="sm" 
-            className={`gap-2 ${isLiked ? 'text-brand-500 hover:text-brand-400' : 'text-surface-400 hover:text-white'}`}
+            className={`gap-2 rounded-full px-4 hover:bg-brand-500/10 transition-colors ${isLiked ? 'text-brand-500' : 'text-surface-300 hover:text-white'}`}
             onClick={handleLike}
             disabled={isLiking}
           >
-            <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-            <span>{likesCount > 0 ? likesCount : 'Like'}</span>
+            <Heart className={`w-5 h-5 ${isLiked ? 'fill-current animate-scale-in' : ''}`} />
+            <span className="font-medium">{likesCount > 0 ? likesCount : 'Like'}</span>
           </Button>
           
           <Button 
             variant="ghost" 
             size="sm" 
-            className="gap-2 text-surface-400 hover:text-white"
+            className="gap-2 rounded-full px-4 text-surface-300 hover:text-white hover:bg-surface-800/80 transition-colors"
             onClick={handleToggleComments}
           >
             <MessageCircle className="w-5 h-5" />
-            <span>{commentsCount > 0 ? commentsCount : 'Comment'}</span>
+            <span className="font-medium">{commentsCount > 0 ? commentsCount : 'Comment'}</span>
           </Button>
         </div>
       </div>
 
       {/* Comments Section */}
       {showComments && (
-        <div className="mt-4 pt-4 border-t border-surface-800/50 space-y-4">
+        <div className="mt-5 pt-5 border-t border-surface-700/40 space-y-5 animate-fade-in">
           {/* Comment Form */}
-          <form onSubmit={handleSubmitComment} className="flex items-center gap-2">
-            <Avatar className="w-8 h-8">
+          <form onSubmit={handleSubmitComment} className="flex items-center gap-3">
+            <Avatar className="w-9 h-9 border border-surface-700">
               <AvatarFallback>You</AvatarFallback>
             </Avatar>
-            <div className="flex-1 flex gap-2">
+            <div className="flex-1 flex gap-2 relative">
               <Input
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
                 placeholder="Write a comment..."
-                className="bg-surface-800 border-surface-700 text-white placeholder:text-surface-500"
+                className="bg-surface-900/50 border-surface-700/60 text-white placeholder:text-surface-500 rounded-full pl-4 pr-12 h-11 focus:border-brand-500/50 focus:bg-surface-800/80 transition-all"
                 disabled={isSubmittingComment}
               />
               <Button 
@@ -174,7 +174,7 @@ export function PostCard({ post, currentUserId }: PostCardProps) {
                 size="icon" 
                 variant="ghost"
                 disabled={!commentText.trim() || isSubmittingComment}
-                className="text-brand-500 hover:text-brand-400"
+                className="absolute right-1 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full text-brand-500 hover:text-brand-400 hover:bg-brand-500/10"
               >
                 <Send className="w-4 h-4" />
               </Button>
@@ -183,21 +183,21 @@ export function PostCard({ post, currentUserId }: PostCardProps) {
 
           {/* Comments List */}
           {comments.length > 0 ? (
-            <div className="space-y-3">
-              {comments.map((comment: any) => (
-                <div key={comment.id} className="flex items-start gap-3">
-                  <Avatar className="w-8 h-8">
+            <div className="space-y-4 pl-2">
+              {comments.map((comment: any, i: number) => (
+                <div key={comment.id} className="flex items-start gap-3 animate-fade-up" style={{ animationDelay: `${i * 50}ms` }}>
+                  <Avatar className="w-8 h-8 mt-1 border border-surface-700">
                     <AvatarImage src={comment.author?.avatar_url || ""} />
                     <AvatarFallback>{getInitials(comment.author?.display_name)}</AvatarFallback>
                   </Avatar>
-                  <div className="flex-1 bg-surface-800 rounded-lg p-3">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Link href={`/profile/${comment.author?.username}`} className="text-sm font-semibold text-white hover:underline">
+                  <div className="flex-1 bg-surface-800/40 border border-surface-700/30 rounded-2xl rounded-tl-sm p-3.5 shadow-sm">
+                    <div className="flex items-baseline gap-2 mb-1.5">
+                      <Link href={`/profile/${comment.author?.username}`} className="text-[13px] font-bold text-white hover:text-brand-400 transition-colors">
                         {comment.author?.display_name}
                       </Link>
-                      <span className="text-xs text-surface-500">{formatRelativeTime(comment.created_at)}</span>
+                      <span className="text-[11px] font-medium text-surface-500">{formatRelativeTime(comment.created_at)}</span>
                     </div>
-                    <p className="text-sm text-surface-200">{comment.content}</p>
+                    <p className="text-sm text-surface-200 leading-snug">{comment.content}</p>
                   </div>
                 </div>
               ))}

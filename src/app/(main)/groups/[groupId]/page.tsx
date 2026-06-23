@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Users, Lock, Globe, Settings } from "lucide-react"
+import Link from "next/link"
+import { joinGroup } from "@/lib/actions/groups"
 
 export const metadata: Metadata = {
   title: "Group - Life Transformers",
@@ -78,15 +80,20 @@ export default async function GroupPage({
             <div className="flex gap-2">
               {group.is_member ? (
                 group.user_role === 'admin' && (
-                  <Button variant="outline" className="gap-2">
-                    <Settings className="w-4 h-4" />
-                    <span className="hidden sm:inline">Manage</span>
+                  <Button variant="outline" className="gap-2" asChild>
+                    <Link href={`/groups/${groupId}/manage`}>
+                      <Settings className="w-4 h-4" />
+                      <span className="hidden sm:inline">Manage</span>
+                    </Link>
                   </Button>
                 )
               ) : (
-                <form action={`/api/groups/${groupId}/join`} method="POST">
-                  {/* Using a simple route or action here. For simplicity, we just use a button that we'll wire up later or let the user join from the Discover page for now */}
-                  <Button disabled>Join Group</Button>
+                <form action={async () => {
+                  "use server"
+                  await joinGroup(groupId)
+                  redirect(`/groups/${groupId}`)
+                }}>
+                  <Button type="submit">Join Group</Button>
                 </form>
               )}
             </div>

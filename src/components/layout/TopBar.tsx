@@ -10,7 +10,7 @@ interface TopBarProps {
 
 export function TopBar({ onMenuClick }: TopBarProps) {
   return (
-    <header className="h-16 border-b border-surface-800 bg-surface-950 flex items-center justify-between px-4 sticky top-0 z-10">
+    <header className="h-16 border-b border-white/5 bg-surface-950/80 backdrop-blur-xl flex items-center justify-between px-4 sticky top-0 z-10">
       <div className="flex items-center gap-4">
         <button
           onClick={onMenuClick}
@@ -28,7 +28,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
           <Link href="/notifications">
             <Bell className="w-5 h-5" />
             {/* Hardcoded badge for now, will replace with realtime state */}
-            <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-brand-500 animate-pulse"></span>
+            <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-brand-500 animate-glow-pulse shadow-[0_0_10px_rgba(234,179,8,1)]"></span>
           </Link>
         </Button>
       </div>

@@ -109,9 +109,9 @@ export function PostComposer({ currentUser, groupId }: PostComposerProps) {
   }
 
   return (
-    <div className="bg-surface-900 border border-surface-800 rounded-xl p-4 transition-all focus-within:shadow-glow-gold/10 focus-within:border-brand-500/30">
+    <div className="glass rounded-2xl p-5 shadow-lg border border-white/5 transition-all duration-300 focus-within:shadow-[0_0_30px_rgba(234,179,8,0.15)] focus-within:border-brand-500/40 hover-lift">
       <div className="flex gap-4">
-        <Avatar className="w-10 h-10 mt-1 shrink-0">
+        <Avatar className="w-12 h-12 mt-0.5 shrink-0 border border-surface-700 shadow-sm">
           <AvatarImage src={currentUser.avatar_url || ""} />
           <AvatarFallback>{currentUser.display_name.charAt(0)}</AvatarFallback>
         </Avatar>
@@ -197,7 +197,7 @@ export function PostComposer({ currentUser, groupId }: PostComposerProps) {
               type="button" 
               onClick={handleSubmit}
               disabled={(!content.trim() && !selectedFile) || isSubmitting}
-              className="rounded-full px-6"
+              className="rounded-full px-8 h-10 bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-400 hover:to-brand-500 text-surface-950 font-semibold shadow-[0_4px_12px_rgba(234,179,8,0.25)] hover:shadow-[0_4px_20px_rgba(234,179,8,0.4)] transition-all press-effect"
             >
               {isSubmitting ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

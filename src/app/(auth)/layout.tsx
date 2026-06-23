@@ -1,4 +1,3 @@
-import React from "react"
 import Image from "next/image"
 
 export default function AuthLayout({
@@ -7,62 +6,92 @@ export default function AuthLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen grid lg:grid-cols-2">
-      {/* Left pane: Branding */}
-      <div className="hidden lg:flex flex-col justify-between p-12 text-brand-50 relative overflow-hidden" style={{
-        background: `
-          radial-gradient(circle at 30% 20%, rgba(234, 179, 8, 0.15) 0%, transparent 50%),
-          radial-gradient(circle at 70% 80%, rgba(147, 51, 234, 0.1) 0%, transparent 50%),
-          linear-gradient(135deg, #1a1033 0%, #0d0d18 50%, #13131f 100%)
-        `
-      }}>
-        {/* Decorative cross pattern */}
-        <div className="absolute inset-0 opacity-10" style={{
-          backgroundImage: `
-            repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(234, 179, 8, 0.3) 80px, rgba(234, 179, 8, 0.3) 81px),
-            repeating-linear-gradient(90deg, transparent, transparent 80px, rgba(234, 179, 8, 0.3) 80px, rgba(234, 179, 8, 0.3) 81px)
-          `
-        }} />
-        {/* Holy light rays */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full pointer-events-none" style={{
-          background: 'conic-gradient(from 180deg at 50% 0%, transparent 0deg, rgba(234, 179, 8, 0.03) 10deg, transparent 20deg, transparent 40deg, rgba(147, 51, 234, 0.02) 50deg, transparent 60deg, transparent 80deg, rgba(234, 179, 8, 0.03) 90deg, transparent 100deg, transparent 120deg, rgba(99, 102, 241, 0.02) 130deg, transparent 140deg, transparent 160deg, rgba(234, 179, 8, 0.03) 170deg, transparent 180deg, transparent 200deg, rgba(147, 51, 234, 0.02) 210deg, transparent 220deg, transparent 240deg, rgba(234, 179, 8, 0.03) 250deg, transparent 260deg, transparent 280deg, rgba(99, 102, 241, 0.02) 290deg, transparent 300deg, transparent 320deg, rgba(234, 179, 8, 0.03) 330deg, transparent 340deg)'
-        }} />
-        <div className="relative z-10">
+    <div className="min-h-screen flex bg-surface-950">
+      {/* ── Left Panel: Branding ────────────────────────────── */}
+      <div className="hidden lg:flex lg:w-[55%] relative overflow-hidden flex-col items-center justify-center p-12">
+        {/* Hero background image */}
+        <div className="absolute inset-0">
           <Image
-            src="/logo.png"
-            alt="Life Transformers Logo"
-            width={100}
-            height={100}
-            className="mb-6 rounded-full"
+            src="/auth-hero.png"
+            alt="Life Transformers"
+            fill
+            className="object-cover"
             priority
           />
-          <h1 className="text-4xl font-bold tracking-tight">
-            Life Transformers
-          </h1>
-          <p className="mt-4 text-brand-200 text-lg max-w-md">
-            Welcome to the private social network for our ministry. Connect, 
-            share, and grow together.
-          </p>
+          {/* Gradient overlays */}
+          <div className="absolute inset-0 bg-gradient-to-r from-surface-950/80 via-surface-950/40 to-surface-950/10" />
+          <div className="absolute inset-0 bg-gradient-to-t from-surface-950/90 via-transparent to-surface-950/30" />
         </div>
-        <div className="relative z-10 text-brand-300 text-sm">
-          &copy; {new Date().getFullYear()} Life Transformers Ministry. Closed network.
+
+        {/* Floating orbs */}
+        <div className="absolute top-20 left-20 w-64 h-64 rounded-full bg-brand-500/10 blur-3xl animate-float" />
+        <div className="absolute bottom-32 right-16 w-48 h-48 rounded-full bg-primary-500/10 blur-3xl animate-float delay-300" />
+
+        {/* Content */}
+        <div className="relative z-10 flex flex-col items-center text-center max-w-lg">
+          {/* Logo */}
+          <div className="relative mb-8 animate-scale-in">
+            <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-brand-500/40 shadow-[0_0_40px_rgba(234,179,8,0.3)] animate-glow-pulse">
+              <Image src="/logo.png" alt="Logo" width={96} height={96} className="object-cover w-full h-full" />
+            </div>
+            {/* Spinning ring decoration */}
+            <div className="absolute -inset-3 rounded-3xl border border-brand-500/20 animate-spin-slow" />
+          </div>
+
+          <h1 className="text-5xl font-bold mb-4 animate-fade-up">
+            <span className="text-gradient-gold">Life</span>{" "}
+            <span className="text-white">Transformers</span>
+          </h1>
+
+          <p className="text-xl text-surface-200 font-light mb-2 animate-fade-up delay-100">
+            Ministry Network
+          </p>
+
+          <p className="text-surface-400 text-base leading-relaxed animate-fade-up delay-200 max-w-sm">
+            A private, faith-filled space for our community to connect, grow, and share life together.
+          </p>
+
+          {/* Decorative divider */}
+          <div className="flex items-center gap-3 mt-8 animate-fade-up delay-300">
+            <div className="w-12 h-px bg-gradient-to-r from-transparent to-brand-500/60" />
+            <span className="text-brand-500 text-lg">✦</span>
+            <div className="w-12 h-px bg-gradient-to-l from-transparent to-brand-500/60" />
+          </div>
+
+          {/* Stats */}
+          <div className="flex gap-8 mt-8 animate-fade-up delay-400">
+            {[
+              { value: "500+", label: "Members" },
+              { value: "∞", label: "Blessings" },
+              { value: "1", label: "Family" },
+            ].map((stat) => (
+              <div key={stat.label} className="text-center">
+                <div className="text-2xl font-bold text-gradient-gold">{stat.value}</div>
+                <div className="text-xs text-surface-400 mt-1">{stat.label}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Right pane: Form */}
-      <div className="flex items-center justify-center p-8 bg-surface-950">
-        <div className="w-full max-w-md space-y-8">
-          <div className="lg:hidden text-center mb-8">
-            <Image
-              src="/logo.png"
-              alt="Life Transformers Logo"
-              width={80}
-              height={80}
-              className="mx-auto mb-4 rounded-full"
-              priority
-            />
-            <h1 className="text-3xl font-bold text-white">Life Transformers</h1>
+      {/* ── Right Panel: Form ───────────────────────────────── */}
+      <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-10 relative">
+        {/* Subtle background pattern */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(234,179,8,0.05),_transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_rgba(99,102,241,0.05),_transparent_60%)]" />
+
+        {/* Mobile logo */}
+        <div className="lg:hidden mb-8 flex items-center gap-3 animate-scale-in">
+          <div className="w-12 h-12 rounded-xl overflow-hidden border border-brand-500/40">
+            <Image src="/logo.png" alt="Logo" width={48} height={48} className="object-cover w-full h-full" />
           </div>
+          <div>
+            <div className="font-bold text-lg text-gradient-gold leading-tight">Life Transformers</div>
+            <div className="text-xs text-surface-400">Ministry Network</div>
+          </div>
+        </div>
+
+        <div className="relative z-10 w-full max-w-md animate-fade-up">
           {children}
         </div>
       </div>
