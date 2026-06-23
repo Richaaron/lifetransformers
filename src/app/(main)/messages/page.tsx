@@ -17,14 +17,70 @@ export default function MessagesPage() {
   const [creating, setCreating] = useState(false)
 
   useEffect(() => {
-    loadConversations()
+    if (targetUserId) {
+      startConversation(targetUserId)
+    } else {
+      loadConversations()
+    }
   }, [])
 
-  useEffect(() => {
-    if (targetUserId) {
-      createOrOpenConversation(targetUserId)
+  const startConversation = async (otherUserId: string) => {
+    setCreating(true)
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      setCreating(false)
+      return
     }
-  }, [targetUserId])
+
+    try {
+      // Check if conversation already exists
+      const { data: myConvos } = await supabase
+        .from("conversation_participants")
+        .select("conversation_id")
+        .eq("user_id", user.id)
+
+      if (myConvos) {
+        for (const c of myConvos) {
+          const { data: other } = await supabase
+            .from("conversation_participants")
+            .select("user_id")
+            .eq("conversation_id", c.conversation_id)
+            .neq("user_id", user.id)
+            .maybeSingle()
+
+          if (other?.user_id === otherUserId) {
+            router.push(`/messages/${c.conversation_id}`)
+            return
+          }
+        }
+      }
+
+      // Create new conversation
+      const { data: newConvo, error } = await supabase
+        .from("conversations")
+        .insert({})
+        .select()
+        .single()
+
+      if (error) {
+        console.error("Error creating conversation:", error)
+        setCreating(false)
+        return
+      }
+
+      if (newConvo) {
+        await supabase.from("conversation_participants").insert([
+          { conversation_id: newConvo.id, user_id: user.id },
+          { conversation_id: newConvo.id, user_id: otherUserId },
+        ])
+        router.push(`/messages/${newConvo.id}`)
+      }
+    } catch (err) {
+      console.error("Error:", err)
+      setCreating(false)
+    }
+  }
 
   const loadConversations = async () => {
     setLoading(true)
@@ -70,13 +126,12 @@ export default function MessagesPage() {
           .eq("conversation_id", c.conversation_id)
           .order("created_at", { ascending: false })
           .limit(1)
-          .single()
+          .maybeSingle()
 
         result.push({
           id: c.conversation_id,
           other_user: profile,
           last_message: lastMsg,
-          is_unread: false,
         })
       }
 
@@ -93,57 +148,11 @@ export default function MessagesPage() {
     setLoading(false)
   }
 
-  const createOrOpenConversation = async (otherUserId: string) => {
-    setCreating(true)
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-
-    try {
-      const { data: myConvos } = await supabase
-        .from("conversation_participants")
-        .select("conversation_id")
-        .eq("user_id", user.id)
-
-      if (myConvos) {
-        for (const c of myConvos) {
-          const { data: other } = await supabase
-            .from("conversation_participants")
-            .select("user_id")
-            .eq("conversation_id", c.conversation_id)
-            .neq("user_id", user.id)
-            .single()
-
-          if (other?.user_id === otherUserId) {
-            router.push(`/messages/${c.conversation_id}`)
-            return
-          }
-        }
-      }
-
-      const { data: newConvo } = await supabase
-        .from("conversations")
-        .insert({})
-        .select()
-        .single()
-
-      if (newConvo) {
-        await supabase.from("conversation_participants").insert([
-          { conversation_id: newConvo.id, user_id: user.id },
-          { conversation_id: newConvo.id, user_id: otherUserId },
-        ])
-        router.push(`/messages/${newConvo.id}`)
-      }
-    } catch (err) {
-      console.error("Error creating conversation:", err)
-      setCreating(false)
-    }
-  }
-
   if (creating) {
     return (
-      <div className="flex items-center justify-center py-20">
+      <div className="flex flex-col items-center justify-center py-20 gap-4">
         <Loader2 className="w-8 h-8 animate-spin text-brand-500" />
+        <p className="text-surface-400">Starting conversation...</p>
       </div>
     )
   }
