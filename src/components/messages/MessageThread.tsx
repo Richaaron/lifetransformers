@@ -116,34 +116,57 @@ export function MessageThread({ conversationId, initialMessages, currentUserId, 
           </div>
         </div>
 
-        {/* Call Buttons and Language Selector */}
-        <div className="flex items-center gap-2">
-          <LanguageSelector value={targetLanguage} onChange={setTargetLanguage} />
-          <Button
-            onClick={() => handleStartCall("voice")}
-            size="icon"
-            variant="ghost"
-            className="h-10 w-10 rounded-full text-surface-400 hover:text-green-500 hover:bg-green-500/10"
-          >
-            <Phone className="w-5 h-5" />
-          </Button>
-          <Button
-            onClick={() => handleStartCall("video")}
-            size="icon"
-            variant="ghost"
-            className="h-10 w-10 rounded-full text-surface-400 hover:text-blue-500 hover:bg-blue-500/10"
-          >
-            <Video className="w-5 h-5" />
-          </Button>
+        {/* Actions */}
+        <div className="flex items-center gap-1 shrink-0">
+          {!isWidget && (
+            <>
+              <LanguageSelector value={targetLanguage} onChange={setTargetLanguage} />
+              <Button
+                onClick={() => handleStartCall("voice")}
+                size="icon"
+                variant="ghost"
+                className="h-10 w-10 rounded-full text-surface-400 hover:text-green-500 hover:bg-green-500/10"
+              >
+                <Phone className="w-5 h-5" />
+              </Button>
+              <Button
+                onClick={() => handleStartCall("video")}
+                size="icon"
+                variant="ghost"
+                className="h-10 w-10 rounded-full text-surface-400 hover:text-blue-500 hover:bg-blue-500/10"
+              >
+                <Video className="w-5 h-5" />
+              </Button>
+            </>
+          )}
+          {isWidget && (
+            <>
+              <Button
+                onClick={() => handleStartCall("voice")}
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 rounded-full text-surface-400 hover:text-green-500 hover:bg-green-500/10"
+              >
+                <Phone className="w-4 h-4" />
+              </Button>
+              <Button
+                onClick={() => handleStartCall("video")}
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 rounded-full text-surface-400 hover:text-blue-500 hover:bg-blue-500/10"
+              >
+                <Video className="w-4 h-4" />
+              </Button>
+            </>
+          )}
           {onClose && (
-            <Button
+            <button
               onClick={onClose}
-              size="icon"
-              variant="ghost"
-              className="h-10 w-10 rounded-full text-surface-400 hover:text-red-500 hover:bg-red-500/10 ml-1"
+              className="ml-1 h-8 w-8 flex items-center justify-center rounded-full bg-surface-800 hover:bg-red-500/20 text-surface-300 hover:text-red-400 transition-all border border-surface-700 hover:border-red-500/50"
+              aria-label="Close chat"
             >
-              <X className="w-5 h-5" />
-            </Button>
+              <X className="w-4 h-4" />
+            </button>
           )}
         </div>
       </div>
