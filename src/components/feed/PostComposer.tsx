@@ -53,7 +53,11 @@ export function PostComposer({ currentUser, groupId }: PostComposerProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const videoInputRef = useRef<HTMLInputElement>(null)
 
-  const placeholder = INSPIRING_PLACEHOLDERS[Math.floor(Math.random() * INSPIRING_PLACEHOLDERS.length)]
+  const [placeholder, setPlaceholder] = useState(INSPIRING_PLACEHOLDERS[0])
+
+  useEffect(() => {
+    setPlaceholder(INSPIRING_PLACEHOLDERS[Math.floor(Math.random() * INSPIRING_PLACEHOLDERS.length)])
+  }, [])
 
   // Auto-resize textarea
   const autoResize = useCallback(() => {

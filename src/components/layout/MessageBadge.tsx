@@ -7,66 +7,57 @@ export function MessageBadge() {
   const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
-    let channel: any
-    
-    const fetchUnreadCount = async () => {
-      const supabase = createClient()
+    const supabase = createClient()
+    let channel: any = null
+
+    const init = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      // Count conversations where the participant's last_read_at is less than the conversation's updated_at
-      const { data: convos } = await supabase
-        .from("conversation_participants")
-        .select(`
-          last_read_at,
-          conversation:conversations ( updated_at )
-        `)
-        .eq("user_id", user.id)
+      const fetchCount = async () => {
+        const { data: convos } = await supabase
+          .from("conversation_participants")
+          .select(`
+            last_read_at,
+            conversation:conversations ( updated_at )
+          `)
+          .eq("user_id", user.id)
 
-      let count = 0
-      if (convos) {
-        for (const c of convos) {
-          const updated_at = (c.conversation as any)?.updated_at
-          if (updated_at) {
-            if (!c.last_read_at || new Date(c.last_read_at) < new Date(updated_at)) {
+        let count = 0
+        if (convos) {
+          for (const c of convos) {
+            const updated_at = (c.conversation as any)?.updated_at
+            if (updated_at && (!c.last_read_at || new Date(c.last_read_at) < new Date(updated_at))) {
               count++
             }
           }
         }
+        setUnreadCount(count)
       }
-      setUnreadCount(count)
 
-      // Subscribe to real-time changes
+      await fetchCount()
+
+      // Subscribe to changes AFTER user is confirmed
       channel = supabase
         .channel("realtime_messages_badge")
+        .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, fetchCount)
         .on(
           "postgres_changes",
           {
             event: "*",
             schema: "public",
-            table: "messages", // when new messages are inserted
-          },
-          () => fetchUnreadCount()
-        )
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "conversation_participants", // when last_read_at is updated
+            table: "conversation_participants",
             filter: `user_id=eq.${user.id}`,
           },
-          () => fetchUnreadCount()
+          fetchCount
         )
         .subscribe()
     }
 
-    fetchUnreadCount()
+    init()
 
     return () => {
-      if (channel) {
-        createClient().removeChannel(channel)
-      }
+      if (channel) supabase.removeChannel(channel)
     }
   }, [])
 
