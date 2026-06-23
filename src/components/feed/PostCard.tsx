@@ -192,7 +192,7 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
         )}
 
         {/* Reaction Row */}
-        <div className="flex items-center gap-2 pt-4 border-t border-white/[0.05] flex-wrap">
+        <div className="flex items-center gap-2 pt-4 border-t border-white/[0.05] flex-wrap pointer-events-auto">
           {/* Faith Reactions */}
           <ReactionBar
             postId={post.id}
