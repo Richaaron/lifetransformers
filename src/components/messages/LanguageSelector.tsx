@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Globe, Check } from "lucide-react"
-import { LANGUAGES } from "@/lib/actions/translate"
+import { LANGUAGES } from "@/lib/constants/languages"
 
 interface LanguageSelectorProps {
   value: string
