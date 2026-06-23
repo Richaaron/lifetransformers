@@ -83,7 +83,7 @@ export function ReactionBar({ postId, initialSummary }: ReactionBarProps) {
         ref={triggerRef}
         onClick={() => setShowPicker(prev => !prev)}
         disabled={isPending}
-        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold transition-all duration-200 border ${
+        className={`relative z-20 pointer-events-auto flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold transition-all duration-200 border ${
           currentReaction
             ? "bg-brand-500/15 border-brand-500/30 text-brand-400"
             : "bg-white/[0.04] border-white/[0.08] text-surface-400 hover:text-white hover:bg-white/[0.08]"

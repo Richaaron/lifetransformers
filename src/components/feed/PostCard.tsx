@@ -145,7 +145,7 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
               <p className="font-bold text-white text-[15px] group-hover/author:text-brand-400 transition-colors duration-200 leading-tight">
                 {post.author.display_name}
               </p>
-              <p className="text-[12px] text-surface-400 font-medium mt-0.5">
+              <p suppressHydrationWarning className="text-[12px] text-surface-400 font-medium mt-0.5">
                 @{post.author.username} · {formatRelativeTime(post.created_at)}
               </p>
             </div>
@@ -202,7 +202,7 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
           {/* Comment Toggle Button */}
           <button
             onClick={handleToggleComments}
-            className={`btn-reaction ${showComments ? "commented" : "default"}`}
+            className={`relative z-20 pointer-events-auto btn-reaction ${showComments ? "commented" : "default"}`}
           >
             <MessageCircle className="w-4 h-4" />
             <span>{commentsCount > 0 ? commentsCount : "Comment"}</span>
