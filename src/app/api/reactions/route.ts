@@ -29,6 +29,16 @@ export async function POST(request: NextRequest) {
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+    // Award XP to the user for reacting
+    try {
+      await supabase.rpc("add_xp", {
+        p_user_id: user.id,
+        p_amount: 1,
+        p_reason: "post_reacted",
+        p_reference_id: postId,
+      })
+    } catch {}
+
     // Award XP to post author
     const { data: post } = await supabase
       .from("posts").select("author_id").eq("id", postId).single()

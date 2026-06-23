@@ -78,6 +78,14 @@ export async function toggleLike(postId: string): Promise<ActionResult> {
     // Like
     await supabase.from("likes").insert({ post_id: postId, user_id: user.id })
     
+    // Award XP to the user for interacting
+    await supabase.rpc("add_xp", {
+      p_user_id: user.id,
+      p_amount: 1,
+      p_reason: "post_liked",
+      p_reference_id: postId,
+    })
+
     // Notify author and award XP
     const { data: post } = await supabase.from("posts").select("author_id").eq("id", postId).single()
     if (post && post.author_id !== user.id) {
@@ -248,6 +256,14 @@ export async function toggleCommentLike(commentId: string): Promise<ActionResult
     // Like
     const { error: likeError } = await supabase.from("comment_likes").insert({ comment_id: commentId, user_id: user.id })
     if (likeError) return { error: likeError.message }
+
+    // Award XP to the user for interacting
+    await supabase.rpc("add_xp", {
+      p_user_id: user.id,
+      p_amount: 1,
+      p_reason: "comment_liked",
+      p_reference_id: commentId,
+    })
 
     // Notify comment author and award XP
     const { data: comment } = await supabase.from("comments").select("id, author_id, post_id").eq("id", commentId).single()

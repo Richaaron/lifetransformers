@@ -70,6 +70,14 @@ export async function sendMessage(conversationId: string, content: string): Prom
 
   if (error || !insertedMessage) return { error: error?.message || "Failed to send message" }
 
+  // Award XP to sender for engaging in chat
+  await supabase.rpc("add_xp", {
+    p_user_id: user.id,
+    p_amount: 1,
+    p_reason: "message_sent",
+    p_reference_id: insertedMessage.id
+  })
+
   // Update last_read_at for sender
   await supabase
     .from('conversation_participants')
@@ -132,6 +140,14 @@ export async function sendVoiceMessage(conversationId: string, audioBlob: Blob):
     .single()
 
   if (error || !insertedMessage) return { error: error?.message || "Failed to send voice message" }
+
+  // Award XP to sender for engaging in chat
+  await supabase.rpc("add_xp", {
+    p_user_id: user.id,
+    p_amount: 1,
+    p_reason: "voice_message_sent",
+    p_reference_id: insertedMessage.id
+  })
 
   // Update last_read_at for sender
   await supabase
