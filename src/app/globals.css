@@ -244,14 +244,14 @@
 
 /* ─── Animation Utilities ─────────────────────────────────────────────────── */
 @layer utilities {
-  .animate-fade-up        { animation: fadeUp 0.5s ease-out both; }
-  .animate-fade-in        { animation: fadeIn 0.4s ease-out both; }
-  .animate-scale-in       { animation: scaleIn 0.35s ease-out both; }
+  .animate-fade-up        { animation: fadeUp 0.5s ease-out forwards; }
+  .animate-fade-in        { animation: fadeIn 0.4s ease-out forwards; }
+  .animate-scale-in       { animation: scaleIn 0.35s ease-out forwards; }
   .animate-float          { animation: float 4s ease-in-out infinite; }
   .animate-spin-slow      { animation: spin-slow 14s linear infinite; }
   .animate-glow-pulse     { animation: glow-pulse-gold 3s ease-in-out infinite; }
-  .animate-slide-in-right { animation: slide-in-right 0.4s ease-out both; }
-  .animate-slide-in-up    { animation: slide-in-up 0.35s ease-out both; }
+  .animate-slide-in-right { animation: slide-in-right 0.4s ease-out forwards; }
+  .animate-slide-in-up    { animation: slide-in-up 0.35s ease-out forwards; }
   .animate-heart-pop      { animation: heart-pop 0.4s ease-out; }
 
   .delay-50  { animation-delay: 0.05s; }

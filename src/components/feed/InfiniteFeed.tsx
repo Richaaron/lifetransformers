@@ -83,18 +83,17 @@ export function InfiniteFeed({ initialPosts, initialReactionMap, currentUserId, 
 
   return (
     <div className="space-y-6">
-      {posts.map((post: any, i: number) => (
-        <div key={post.id} className="animate-fade-up" style={{ animationDelay: `${Math.min(i * 50, 300)}ms` }}>
-          <PostCard
-            post={post}
-            currentUserId={currentUserId}
-            reactionSummary={reactionMap[post.id] ?? {
-              counts: { amen: 0, love: 0, praying: 0, inspired: 0, like: 0 },
-              userReaction: null,
-              total: 0,
-            }}
-          />
-        </div>
+      {posts.map((post: any) => (
+        <PostCard
+          key={post.id}
+          post={post}
+          currentUserId={currentUserId}
+          reactionSummary={reactionMap[post.id] ?? {
+            counts: { amen: 0, love: 0, praying: 0, inspired: 0, like: 0 },
+            userReaction: null,
+            total: 0,
+          }}
+        />
       ))}
 
       {/* Intersection Observer Target */}
