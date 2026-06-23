@@ -2,32 +2,35 @@
 
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { Bell } from "lucide-react"
 
 export function NotificationBadge() {
   const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
-    let channel: any
-    
-    const fetchUnreadCount = async () => {
-      const supabase = createClient()
+    const supabase = createClient()
+    let channel: any = null
+
+    const init = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      const { count, error } = await supabase
-        .from("notifications")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", user.id)
-        .eq("read", false)
+      const fetchCount = async () => {
+        const { count, error } = await supabase
+          .from("notifications")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .eq("read", false)
 
-      if (!error && count !== null) {
-        setUnreadCount(count)
+        if (!error && count !== null) {
+          setUnreadCount(count)
+        }
       }
 
-      // Subscribe to real-time changes
+      await fetchCount()
+
+      // Subscribe AFTER user is confirmed
       channel = supabase
-        .channel("realtime_notifications")
+        .channel("notification_badge_channel")
         .on(
           "postgres_changes",
           {
@@ -36,20 +39,15 @@ export function NotificationBadge() {
             table: "notifications",
             filter: `user_id=eq.${user.id}`,
           },
-          () => {
-            // Refetch count on any change (insert/update/delete)
-            fetchUnreadCount()
-          }
+          fetchCount
         )
         .subscribe()
     }
 
-    fetchUnreadCount()
+    init()
 
     return () => {
-      if (channel) {
-        createClient().removeChannel(channel)
-      }
+      if (channel) supabase.removeChannel(channel)
     }
   }, [])
 

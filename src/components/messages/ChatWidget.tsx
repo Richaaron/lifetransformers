@@ -40,7 +40,7 @@ export function ChatWidget() {
       setCurrentUserId(user.id)
 
       // Fetch other user details
-      const { data: participants } = await supabase
+      const { data: participants, error: partError } = await supabase
         .from("conversation_participants")
         .select(`
           user_id,
@@ -52,7 +52,7 @@ export function ChatWidget() {
         `)
         .eq("conversation_id", activeConversationId!)
         .neq("user_id", user.id)
-        .single()
+        .maybeSingle()
 
       if (!participants || !participants.profiles) {
         setError("Conversation not found")
