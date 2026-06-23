@@ -112,7 +112,7 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
 
   return (
     <article
-      className="group relative rounded-2xl overflow-hidden transition-all duration-300"
+      className="group relative rounded-2xl transition-all duration-300"
       style={{
         background: "linear-gradient(160deg, rgba(14,12,26,0.88) 0%, rgba(10,10,20,0.75) 100%)",
         backdropFilter: "blur(24px)",
@@ -128,7 +128,7 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
         style={{ boxShadow: "inset 0 0 0 1px rgba(234,179,8,0.1)" }}
       />
 
-      <div className="p-5 sm:p-6">
+      <div className="relative z-10 p-5 sm:p-6">
         {/* Author Row */}
         <div className="flex items-start justify-between mb-4">
           <Link href={`/profile/${post.author.username}`} className="flex items-center gap-3 group/author">
@@ -217,7 +217,7 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
 
       {/* Comments Panel */}
       {showComments && (
-        <div className="border-t border-white/[0.05] px-5 sm:px-6 py-5 space-y-5 animate-fade-in"
+        <div className="relative z-10 border-t border-white/[0.05] px-5 sm:px-6 py-5 space-y-5 animate-fade-in rounded-b-2xl"
           style={{ background: "rgba(0,0,0,0.15)" }}>
 
           {/* Comment Input */}
