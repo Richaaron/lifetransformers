@@ -5,6 +5,7 @@ import { InfiniteFeed } from "@/components/feed/InfiniteFeed"
 import { FeedSkeleton } from "@/components/feed/LoadingSkeleton"
 import { Suspense } from "react"
 import { createClient } from "@/lib/supabase/server"
+import type { ReactionType } from "@/lib/actions/reactions"
 import Image from "next/image"
 
 export const metadata: Metadata = {
@@ -28,25 +29,34 @@ export default async function FeedPage() {
   const feed = (await getFeed()).slice(0, limit)
   const hasMoreInitial = (await getFeed()).length > limit
 
-  // Batch-fetch likes for all posts in one query (using 'likes' table)
+  // Batch-fetch reaction summaries for all posts in one query
   const postIds = feed.map((p: any) => p.id)
-  let reactionMap: Record<string, { total: number; userReaction: string | null; counts: Record<string, number> }> = {}
+  let reactionMap: Record<string, {
+    counts: Record<ReactionType, number>
+    userReaction: ReactionType | null
+    total: number
+  }> = {}
 
   if (postIds.length > 0) {
-    const { data: likes } = await supabase
-      .from("likes")
-      .select("post_id, user_id")
+    const { data: reactions } = await supabase
+      .from("post_reactions")
+      .select("post_id, user_id, reaction_type")
       .in("post_id", postIds)
 
-    for (const like of likes || []) {
-      const pid = like.post_id
+    for (const r of reactions || []) {
+      const pid = r.post_id
       if (!reactionMap[pid]) {
-        reactionMap[pid] = { total: 0, userReaction: null, counts: { like: 0 } }
+        reactionMap[pid] = {
+          counts: { amen: 0, love: 0, praying: 0, inspired: 0, like: 0 },
+          userReaction: null,
+          total: 0,
+        }
       }
-      reactionMap[pid].total++
-      reactionMap[pid].counts.like++
-      if (like.user_id === user.id) {
-        reactionMap[pid].userReaction = "like"
+      const entry = reactionMap[pid]
+      entry.counts[r.reaction_type as ReactionType] = (entry.counts[r.reaction_type as ReactionType] || 0) + 1
+      entry.total++
+      if (r.user_id === user.id) {
+        entry.userReaction = r.reaction_type as ReactionType
       }
     }
   }

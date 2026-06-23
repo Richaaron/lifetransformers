@@ -1,75 +1,185 @@
 "use client"
 
-import { useState } from "react"
-import { Heart } from "lucide-react"
+import { useState, useRef, useEffect } from "react"
+import type { ReactionType } from "@/lib/actions/reactions"
+
+const REACTIONS: Record<ReactionType, { emoji: string; label: string; color: string }> = {
+  amen:     { emoji: "🙏", label: "Amen",     color: "text-amber-400"  },
+  love:     { emoji: "❤️",  label: "Love",     color: "text-rose-400"   },
+  praying:  { emoji: "🕊️", label: "Praying",  color: "text-purple-400" },
+  inspired: { emoji: "✨",  label: "Inspired", color: "text-yellow-400" },
+  like:     { emoji: "👍",  label: "Like",     color: "text-blue-400"   },
+}
+
+interface ReactionSummary {
+  counts: Record<ReactionType, number>
+  userReaction: ReactionType | null
+  total: number
+}
 
 interface ReactionBarProps {
   postId: string
-  initialSummary: {
-    counts?: Record<string, number>
-    userReaction?: string | null
-    total?: number
-    // Simple likes fallback
-    likeCount?: number
-    userLiked?: boolean
-  }
+  initialSummary: ReactionSummary
 }
 
 export function ReactionBar({ postId, initialSummary }: ReactionBarProps) {
-  const [liked, setLiked] = useState<boolean>(
-    initialSummary.userReaction != null || initialSummary.userLiked === true
-  )
-  const [count, setCount] = useState<number>(
-    initialSummary.total ?? initialSummary.likeCount ?? 0
-  )
+  const [summary, setSummary] = useState<ReactionSummary>(initialSummary)
   const [isPending, setIsPending] = useState(false)
+  const [showPicker, setShowPicker] = useState(false)
+  const pickerRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
 
-  const handleReact = async () => {
+  // Close picker on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        pickerRef.current && !pickerRef.current.contains(e.target as Node) &&
+        triggerRef.current && !triggerRef.current.contains(e.target as Node)
+      ) {
+        setShowPicker(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
+
+  const handleReact = async (type: ReactionType) => {
     if (isPending) return
     setIsPending(true)
+    setShowPicker(false)
 
     // Optimistic update
-    const newLiked = !liked
-    setLiked(newLiked)
-    setCount(prev => newLiked ? prev + 1 : Math.max(0, prev - 1))
+    setSummary(prev => {
+      const newCounts = { ...prev.counts }
+      let newTotal = prev.total
+      let newUserReaction: ReactionType | null = type
+
+      if (prev.userReaction) {
+        newCounts[prev.userReaction] = Math.max(0, (newCounts[prev.userReaction] || 0) - 1)
+        newTotal--
+      }
+
+      if (prev.userReaction === type) {
+        newUserReaction = null
+      } else {
+        newCounts[type] = (newCounts[type] || 0) + 1
+        newTotal++
+      }
+
+      return { counts: newCounts, userReaction: newUserReaction, total: newTotal }
+    })
 
     try {
       const res = await fetch("/api/reactions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ postId }),
+        body: JSON.stringify({ postId, reactionType: type }),
       })
-
       if (!res.ok) {
-        // Revert on failure
-        setLiked(liked)
-        setCount(count)
-        console.error("Reaction failed:", await res.text())
+        // Revert optimistic update on failure
+        setSummary(initialSummary)
       }
-    } catch (err) {
-      setLiked(liked)
-      setCount(count)
-      console.error("Reaction error:", err)
+    } catch {
+      setSummary(initialSummary)
     } finally {
       setIsPending(false)
     }
   }
 
+  const currentReaction = summary.userReaction ? REACTIONS[summary.userReaction] : null
+
+  // Build top reactions (non-zero counts, sorted by count desc, max 3)
+  const topReactions = (Object.keys(summary.counts) as ReactionType[])
+    .filter(r => summary.counts[r] > 0)
+    .sort((a, b) => summary.counts[b] - summary.counts[a])
+    .slice(0, 3)
+
   return (
-    <button
-      onClick={handleReact}
-      disabled={isPending}
-      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold transition-all duration-200 border ${
-        liked
-          ? "bg-rose-500/15 border-rose-500/30 text-rose-400"
-          : "bg-white/[0.04] border-white/[0.08] text-surface-400 hover:text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/20"
-      } ${isPending ? "opacity-70" : ""}`}
-    >
-      <Heart className={`w-4 h-4 transition-all duration-200 ${liked ? "fill-rose-400 scale-110" : ""}`} />
-      <span>{liked ? "Liked" : "Like"}</span>
-      {count > 0 && (
-        <span className="text-xs font-normal opacity-70">{count}</span>
+    <div className="relative flex items-center gap-2">
+      {/* Main reaction trigger button */}
+      <button
+        ref={triggerRef}
+        onClick={() => setShowPicker(prev => !prev)}
+        disabled={isPending}
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold transition-all duration-200 border ${
+          currentReaction
+            ? "bg-brand-500/15 border-brand-500/30 text-brand-400"
+            : "bg-white/[0.04] border-white/[0.08] text-surface-400 hover:text-white hover:bg-white/[0.08]"
+        }`}
+      >
+        <span className="text-base leading-none">
+          {currentReaction ? currentReaction.emoji : "🙏"}
+        </span>
+        <span className={currentReaction ? currentReaction.color : ""}>
+          {currentReaction ? currentReaction.label : "React"}
+        </span>
+        {summary.total > 0 && (
+          <span className="text-xs text-surface-500 font-normal ml-0.5">{summary.total}</span>
+        )}
+      </button>
+
+      {/* Reaction emoji stacks */}
+      {topReactions.length > 0 && (
+        <div className="flex items-center gap-1">
+          {topReactions.map(type => (
+            <button
+              key={type}
+              onClick={() => handleReact(type)}
+              disabled={isPending}
+              title={`${REACTIONS[type].label}: ${summary.counts[type]}`}
+              className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs transition-all border ${
+                summary.userReaction === type
+                  ? "bg-brand-500/15 border-brand-500/30"
+                  : "bg-white/[0.03] border-white/[0.06] hover:bg-white/[0.07]"
+              }`}
+            >
+              <span className="text-sm">{REACTIONS[type].emoji}</span>
+              <span className="text-surface-400">{summary.counts[type]}</span>
+            </button>
+          ))}
+        </div>
       )}
-    </button>
+
+      {/* Reaction picker popup */}
+      {showPicker && (
+        <div
+          ref={pickerRef}
+          className="absolute bottom-full left-0 mb-2 z-50"
+        >
+          <div
+            className="flex items-center gap-1 p-2 rounded-2xl shadow-2xl border border-white/10"
+            style={{
+              background: "rgba(14,12,26,0.96)",
+              backdropFilter: "blur(24px)",
+              boxShadow: "0 8px 40px rgba(0,0,0,0.6)",
+            }}
+          >
+            {(Object.keys(REACTIONS) as ReactionType[]).map(type => {
+              const r = REACTIONS[type]
+              const isActive = summary.userReaction === type
+              return (
+                <button
+                  key={type}
+                  onClick={() => handleReact(type)}
+                  title={r.label}
+                  className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all duration-150 group ${
+                    isActive
+                      ? "bg-brand-500/20 scale-110"
+                      : "hover:bg-white/[0.08] hover:scale-125"
+                  }`}
+                >
+                  <span className="text-2xl leading-none transition-transform duration-150 group-hover:scale-110">
+                    {r.emoji}
+                  </span>
+                  <span className={`text-[10px] font-semibold ${isActive ? r.color : "text-surface-500"}`}>
+                    {r.label}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
