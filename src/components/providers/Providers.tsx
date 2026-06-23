@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import { Toaster } from "sonner"
 import { NotificationProvider } from "@/components/providers/NotificationProvider"
+import { ChatProvider } from "@/components/providers/ChatProvider"
 
 export default async function Providers({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies()
@@ -28,7 +29,9 @@ export default async function Providers({ children }: { children: React.ReactNod
 
   return (
     <NotificationProvider currentUserId={user?.id || null}>
-      {children}
+      <ChatProvider>
+        {children}
+      </ChatProvider>
       <Toaster 
         position="top-right" 
         toastOptions={{

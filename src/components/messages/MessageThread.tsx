@@ -21,9 +21,11 @@ interface MessageThreadProps {
   initialMessages: any[]
   currentUserId: string
   otherUser: any
+  onClose?: () => void
+  isWidget?: boolean
 }
 
-export function MessageThread({ conversationId, initialMessages, currentUserId, otherUser }: MessageThreadProps) {
+export function MessageThread({ conversationId, initialMessages, currentUserId, otherUser, onClose, isWidget }: MessageThreadProps) {
   const [messages, setMessages] = useRealtimeMessages(conversationId, initialMessages)
   const [content, setContent] = useState("")
   const [isSending, setIsSending] = useState(false)
@@ -89,7 +91,7 @@ export function MessageThread({ conversationId, initialMessages, currentUserId, 
   }
 
   return (
-    <div className="flex flex-col h-full bg-surface-900 border border-surface-800 rounded-xl overflow-hidden">
+    <div className={`flex flex-col h-full bg-surface-900 border-surface-800 overflow-hidden ${!isWidget ? 'border rounded-xl' : ''}`}>
       {/* Header */}
       <div className="h-16 border-b border-surface-800 bg-surface-950 flex items-center justify-between px-6 shrink-0">
         <div className="flex items-center gap-3">
@@ -133,6 +135,16 @@ export function MessageThread({ conversationId, initialMessages, currentUserId, 
           >
             <Video className="w-5 h-5" />
           </Button>
+          {onClose && (
+            <Button
+              onClick={onClose}
+              size="icon"
+              variant="ghost"
+              className="h-10 w-10 rounded-full text-surface-400 hover:text-red-500 hover:bg-red-500/10 ml-1"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          )}
         </div>
       </div>
 

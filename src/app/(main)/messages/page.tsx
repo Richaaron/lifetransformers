@@ -9,11 +9,13 @@ import { createClient } from "@/lib/supabase/client"
 import { Loader2 } from "lucide-react"
 import { usePresence } from "@/hooks/usePresence"
 import { OnlineIndicator } from "@/components/ui/OnlineIndicator"
+import { useChat } from "@/components/providers/ChatProvider"
 
 export default function MessagesPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const targetUserId = searchParams.get("user")
+  const { openChat } = useChat()
   const [conversations, setConversations] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
@@ -58,7 +60,8 @@ export default function MessagesPage() {
             .maybeSingle()
 
           if (other?.user_id === otherUserId) {
-            router.push(`/messages/${c.conversation_id}`)
+            openChat(c.conversation_id)
+            setCreating(false)
             return
           }
         }
@@ -82,7 +85,8 @@ export default function MessagesPage() {
           { conversation_id: newConvo.id, user_id: user.id },
           { conversation_id: newConvo.id, user_id: otherUserId },
         ])
-        router.push(`/messages/${newConvo.id}`)
+        openChat(newConvo.id)
+        setCreating(false)
       }
     } catch (err) {
       console.error("Error:", err)
@@ -191,10 +195,10 @@ export default function MessagesPage() {
         ) : (
           <div className="divide-y divide-surface-800">
             {conversations.map((convo) => (
-              <Link 
+              <button 
                 key={convo.id} 
-                href={`/messages/${convo.id}`}
-                className="flex items-center gap-4 p-4 hover:bg-surface-800 transition-colors"
+                onClick={() => openChat(convo.id)}
+                className="w-full flex items-center gap-4 p-4 hover:bg-surface-800 transition-colors text-left"
               >
                 <div className="relative shrink-0">
                   <Avatar className="w-12 h-12 border border-surface-700">
@@ -225,7 +229,7 @@ export default function MessagesPage() {
                       : "Start a conversation"}
                   </p>
                 </div>
-              </Link>
+              </button>
             ))}
           </div>
         )}

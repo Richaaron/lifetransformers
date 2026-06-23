@@ -9,6 +9,7 @@ import { LEVEL_NAMES, getXpProgress } from "@/lib/types"
 import { Star, Trophy, MessageSquare, Heart, Calendar, MapPin, Gamepad2, User, Pencil, Mail } from "lucide-react"
 import Link from "next/link"
 import { ProfileAvatarModal } from "@/components/profile/ProfileAvatarModal"
+import { ProfileMessageButton } from "@/components/profile/ProfileMessageButton"
 
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
   const { username } = await params
@@ -122,13 +123,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                 Edit Profile
               </Link>
             ) : (
-              <Link
-                href={`/messages?user=${profile.id}`}
-                className="flex items-center gap-2 px-4 py-2 bg-brand-500 hover:bg-brand-600 rounded-lg text-sm font-medium text-white transition-colors"
-              >
-                <Mail className="w-4 h-4" />
-                Message
-              </Link>
+              <ProfileMessageButton targetUserId={profile.id} />
             )}
           </div>
         </CardContent>
