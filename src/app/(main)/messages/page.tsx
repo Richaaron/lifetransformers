@@ -111,37 +111,44 @@ export default function MessagesPage() {
         return
       }
 
-      const result: any[] = []
+      const convoIds = myConvos.map(c => c.conversation_id)
 
-      for (const c of myConvos) {
-        const { data: others } = await supabase
-          .from("conversation_participants")
-          .select("user_id")
-          .eq("conversation_id", c.conversation_id)
-          .neq("user_id", user.id)
+      // Batch fetch all other participants and their profiles
+      const { data: otherParticipants } = await supabase
+        .from("conversation_participants")
+        .select(`
+          conversation_id,
+          user_id,
+          profiles (
+            id,
+            display_name,
+            avatar_url
+          )
+        `)
+        .in("conversation_id", convoIds)
+        .neq("user_id", user.id)
 
-        if (!others || others.length === 0) continue
-
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("id, display_name, avatar_url")
-          .eq("id", others[0].user_id)
-          .single()
+      // Fetch last messages in parallel
+      const resultPromises = convoIds.map(async (convoId) => {
+        const participant = otherParticipants?.find(p => p.conversation_id === convoId)
+        if (!participant || !participant.profiles) return null
 
         const { data: lastMsg } = await supabase
           .from("messages")
           .select("content, sender_id, created_at")
-          .eq("conversation_id", c.conversation_id)
+          .eq("conversation_id", convoId)
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle()
 
-        result.push({
-          id: c.conversation_id,
-          other_user: profile,
+        return {
+          id: convoId,
+          other_user: participant.profiles,
           last_message: lastMsg,
-        })
-      }
+        }
+      })
+
+      let result = (await Promise.all(resultPromises)).filter(Boolean) as any[]
 
       result.sort((a, b) => {
         if (!a.last_message) return 1
