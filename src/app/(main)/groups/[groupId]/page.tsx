@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Users, Lock, Globe, Settings } from "lucide-react"
 import Link from "next/link"
 import { joinGroup } from "@/lib/actions/groups"
+import { GroupCallButton } from "@/components/groups/GroupCallButton"
 
 export const metadata: Metadata = {
   title: "Group - Life Transformers",
@@ -77,16 +78,30 @@ export default async function GroupPage({
               </div>
             </div>
             
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               {group.is_member ? (
-                group.user_role === 'admin' && (
-                  <Button variant="outline" className="gap-2" asChild>
-                    <Link href={`/groups/${groupId}/manage`}>
-                      <Settings className="w-4 h-4" />
-                      <span className="hidden sm:inline">Manage</span>
-                    </Link>
-                  </Button>
-                )
+                <>
+                  {/* Group Call Buttons — for all members */}
+                  {profile && (
+                    <GroupCallButton
+                      groupId={group.id}
+                      groupName={group.name}
+                      currentUser={{
+                        id: profile.id,
+                        display_name: profile.display_name,
+                        avatar_url: profile.avatar_url ?? undefined,
+                      }}
+                    />
+                  )}
+                  {group.user_role === 'admin' && (
+                    <Button variant="outline" className="gap-2" asChild>
+                      <Link href={`/groups/${groupId}/manage`}>
+                        <Settings className="w-4 h-4" />
+                        <span className="hidden sm:inline">Manage</span>
+                      </Link>
+                    </Button>
+                  )}
+                </>
               ) : (
                 <form action={async () => {
                   "use server"
