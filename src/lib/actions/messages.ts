@@ -56,12 +56,7 @@ export async function sendMessage(conversationId: string, content: string): Prom
 
   if (!content.trim()) return { error: "Message cannot be empty" }
 
-  const { containsCurseWords } = await import("@/lib/utils/word-filter")
-  let finalContent = content.trim()
-  const { hasCurse, filtered } = containsCurseWords(finalContent)
-  if (hasCurse) {
-    finalContent = filtered
-  }
+  const finalContent = content.trim()
 
   const { error } = await supabase
     .from('messages')

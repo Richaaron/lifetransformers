@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { containsCurseWords } from "@/lib/utils/word-filter"
 
 export async function POST(request: NextRequest) {
   const { content, mediaUrl, mediaType, groupId } = await request.json()
@@ -16,13 +15,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  let finalContent = content || ""
-  if (finalContent) {
-    const { hasCurse, filtered } = containsCurseWords(finalContent)
-    if (hasCurse) {
-      finalContent = filtered
-    }
-  }
+  const finalContent = content || ""
 
   const postData: Record<string, unknown> = {
     author_id: user.id,

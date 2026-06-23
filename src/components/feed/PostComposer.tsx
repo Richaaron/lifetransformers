@@ -6,9 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Image as ImageIcon, Video, X, Loader2 } from "lucide-react"
 import { uploadFile, formatFileSize } from "@/lib/utils/file-upload"
-import { containsCurseWords } from "@/lib/utils/word-filter"
-import { createClient } from "@/lib/supabase/client"
-import { revalidatePath } from "next/cache"
 
 interface PostComposerProps {
   currentUser: {
@@ -58,13 +55,6 @@ export function PostComposer({ currentUser, groupId }: PostComposerProps) {
     const textContent = content.trim()
     
     if (!textContent && !selectedFile) return
-
-    const { hasCurse, filtered } = containsCurseWords(textContent)
-    if (hasCurse) {
-      setContent(filtered)
-      setError("Your post contains inappropriate language. It has been filtered.")
-      return
-    }
 
     setIsSubmitting(true)
     setError("")

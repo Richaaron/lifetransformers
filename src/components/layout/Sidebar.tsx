@@ -48,6 +48,7 @@ export function Sidebar() {
             <Link
               key={item.name}
               href={item.href}
+              prefetch={true}
               className={cn(
                 "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
                 isActive
@@ -64,6 +65,7 @@ export function Sidebar() {
         {username && (
           <Link
             href={`/profile/${username}`}
+            prefetch={true}
             className={cn(
               "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
               pathname.startsWith("/profile")

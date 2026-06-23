@@ -40,6 +40,7 @@ export function BottomNav() {
             <Link
               key={tab.name}
               href={tab.href}
+              prefetch={true}
               className={cn(
                 "flex flex-col items-center gap-1 px-3 py-1 text-xs transition-colors",
                 isActive

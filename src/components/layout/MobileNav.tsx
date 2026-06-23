@@ -63,6 +63,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
               <Link
                 key={item.name}
                 href={item.href}
+                prefetch={true}
                 onClick={onClose}
                 className={cn(
                   "flex items-center gap-3 px-3 py-3 rounded-md text-base font-medium transition-colors",
@@ -80,6 +81,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
           {username && (
             <Link
               href={`/profile/${username}`}
+              prefetch={true}
               onClick={onClose}
               className={cn(
                 "flex items-center gap-3 px-3 py-3 rounded-md text-base font-medium transition-colors",

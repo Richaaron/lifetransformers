@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { ActionResult } from "@/lib/types"
-import { containsCurseWords } from "@/lib/utils/word-filter"
 
 export async function createPost(prevState: ActionResult, formData: FormData): Promise<ActionResult> {
   const content = formData.get("content") as string
@@ -21,13 +20,7 @@ export async function createPost(prevState: ActionResult, formData: FormData): P
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: "Unauthorized" }
 
-  let finalContent = content?.trim() || ""
-  if (finalContent) {
-    const { hasCurse, filtered } = containsCurseWords(finalContent)
-    if (hasCurse) {
-      finalContent = filtered
-    }
-  }
+  const finalContent = content?.trim() || ""
 
   const postData: Record<string, unknown> = {
     author_id: user.id,
@@ -137,11 +130,7 @@ export async function addComment(postId: string, content: string): Promise<Actio
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: "Unauthorized" }
 
-  let finalContent = content.trim()
-  const { hasCurse, filtered } = containsCurseWords(finalContent)
-  if (hasCurse) {
-    finalContent = filtered
-  }
+  const finalContent = content.trim()
 
   const { error } = await supabase
     .from("comments")
