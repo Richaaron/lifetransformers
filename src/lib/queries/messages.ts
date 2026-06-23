@@ -86,19 +86,25 @@ export async function getMessages(conversationId: string) {
 
   const { data, error } = await supabase
     .from('messages')
-    .select(`
-      id,
-      content,
-      created_at,
-      sender_id,
-      sender:profiles!messages_sender_id_fkey(id, display_name, avatar_url)
-    `)
+    .select('id, content, created_at, sender_id')
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: true })
     .limit(100)
 
   if (error || !data) return []
-  return data
+
+  const messagesWithSenders = await Promise.all(
+    data.map(async (msg) => {
+      const { data: sender } = await supabase
+        .from('profiles')
+        .select('id, display_name, avatar_url')
+        .eq('id', msg.sender_id)
+        .single()
+      return { ...msg, sender }
+    })
+  )
+
+  return messagesWithSenders
 }
 
 export async function getConversationDetails(conversationId: string) {
@@ -108,14 +114,18 @@ export async function getConversationDetails(conversationId: string) {
 
   const { data: otherParticipant } = await supabase
     .from('conversation_participants')
-    .select(`
-      profiles!conversation_participants_user_id_fkey(id, username, display_name, avatar_url, last_active)
-    `)
+    .select('user_id')
     .eq('conversation_id', conversationId)
     .neq('user_id', user.id)
     .single()
 
   if (!otherParticipant) return null
 
-  return otherParticipant.profiles
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id, username, display_name, avatar_url')
+    .eq('id', otherParticipant.user_id)
+    .single()
+
+  return profile
 }
