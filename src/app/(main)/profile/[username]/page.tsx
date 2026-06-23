@@ -8,6 +8,7 @@ import { getInitials } from "@/lib/utils"
 import { LEVEL_NAMES, getXpProgress } from "@/lib/types"
 import { Star, Trophy, MessageSquare, Heart, Calendar, MapPin, Gamepad2, User, Pencil, Mail } from "lucide-react"
 import Link from "next/link"
+import { ProfileAvatarModal } from "@/components/profile/ProfileAvatarModal"
 
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
   const { username } = await params
@@ -86,10 +87,10 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
 
         <CardContent className="pt-0 relative px-6 sm:px-10 pb-8">
           <div className="flex flex-col sm:flex-row gap-6 sm:gap-8 -mt-16 sm:-mt-20 relative z-10">
-            <Avatar className="w-32 h-32 sm:w-40 sm:h-40 border-4 border-surface-900 shadow-2xl bg-surface-800">
-              <AvatarImage src={profile.avatar_url || ""} />
-              <AvatarFallback className="text-2xl">{getInitials(profile.display_name)}</AvatarFallback>
-            </Avatar>
+            <ProfileAvatarModal 
+              avatarUrl={profile.avatar_url} 
+              displayName={profile.display_name} 
+            />
             <div className="flex-1 text-center sm:text-left">
               <h1 className="text-2xl font-bold text-white">{profile.display_name}</h1>
               <p className="text-surface-400">@{profile.username}</p>
