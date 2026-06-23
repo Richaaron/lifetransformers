@@ -1,7 +1,15 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { toggleReaction, REACTIONS, type ReactionType } from "@/lib/actions/reactions"
+import type { ReactionType } from "@/lib/actions/reactions"
+
+const REACTIONS: Record<ReactionType, { emoji: string; label: string; color: string }> = {
+  amen:     { emoji: "🙏", label: "Amen",     color: "text-amber-400"  },
+  love:     { emoji: "❤️",  label: "Love",     color: "text-rose-400"   },
+  praying:  { emoji: "🕊️", label: "Praying",  color: "text-purple-400" },
+  inspired: { emoji: "✨",  label: "Inspired", color: "text-yellow-400" },
+  like:     { emoji: "👍",  label: "Like",     color: "text-blue-400"   },
+}
 
 interface ReactionSummary {
   counts: Record<ReactionType, number>
@@ -47,16 +55,13 @@ export function ReactionBar({ postId, initialSummary }: ReactionBarProps) {
       let newUserReaction: ReactionType | null = type
 
       if (prev.userReaction) {
-        // Remove the old reaction count
         newCounts[prev.userReaction] = Math.max(0, (newCounts[prev.userReaction] || 0) - 1)
         newTotal--
       }
 
       if (prev.userReaction === type) {
-        // Toggle off — already handled by removing above
         newUserReaction = null
       } else {
-        // Add new reaction
         newCounts[type] = (newCounts[type] || 0) + 1
         newTotal++
       }
@@ -64,8 +69,21 @@ export function ReactionBar({ postId, initialSummary }: ReactionBarProps) {
       return { counts: newCounts, userReaction: newUserReaction, total: newTotal }
     })
 
-    await toggleReaction(postId, type)
-    setIsPending(false)
+    try {
+      const res = await fetch("/api/reactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ postId, reactionType: type }),
+      })
+      if (!res.ok) {
+        // Revert optimistic update on failure
+        setSummary(initialSummary)
+      }
+    } catch {
+      setSummary(initialSummary)
+    } finally {
+      setIsPending(false)
+    }
   }
 
   const currentReaction = summary.userReaction ? REACTIONS[summary.userReaction] : null
@@ -83,7 +101,7 @@ export function ReactionBar({ postId, initialSummary }: ReactionBarProps) {
         ref={triggerRef}
         onClick={() => setShowPicker(prev => !prev)}
         disabled={isPending}
-        className={`relative z-20 pointer-events-auto flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold transition-all duration-200 border ${
+        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold transition-all duration-200 border ${
           currentReaction
             ? "bg-brand-500/15 border-brand-500/30 text-brand-400"
             : "bg-white/[0.04] border-white/[0.08] text-surface-400 hover:text-white hover:bg-white/[0.08]"
@@ -126,7 +144,7 @@ export function ReactionBar({ postId, initialSummary }: ReactionBarProps) {
       {showPicker && (
         <div
           ref={pickerRef}
-          className="absolute bottom-full left-0 mb-2 z-50 animate-fade-up"
+          className="absolute bottom-full left-0 mb-2 z-50"
         >
           <div
             className="flex items-center gap-1 p-2 rounded-2xl shadow-2xl border border-white/10"
