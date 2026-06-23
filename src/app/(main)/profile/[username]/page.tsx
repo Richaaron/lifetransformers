@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { getInitials } from "@/lib/utils"
 import { LEVEL_NAMES, getXpProgress } from "@/lib/types"
-import { Star, Trophy, MessageSquare, Heart, Calendar, MapPin, Gamepad2, User, Pencil } from "lucide-react"
+import { Star, Trophy, MessageSquare, Heart, Calendar, MapPin, Gamepad2, User, Pencil, Mail } from "lucide-react"
 import Link from "next/link"
 
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
@@ -102,13 +102,21 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                 </span>
               </div>
             </div>
-            {isOwnProfile && (
+            {isOwnProfile ? (
               <Link
                 href="/profile/edit"
                 className="flex items-center gap-2 px-4 py-2 bg-surface-800 hover:bg-surface-700 rounded-lg text-sm font-medium text-white transition-colors"
               >
                 <Pencil className="w-4 h-4" />
                 Edit Profile
+              </Link>
+            ) : (
+              <Link
+                href={`/messages?user=${profile.id}`}
+                className="flex items-center gap-2 px-4 py-2 bg-brand-500 hover:bg-brand-600 rounded-lg text-sm font-medium text-white transition-colors"
+              >
+                <Mail className="w-4 h-4" />
+                Message
               </Link>
             )}
           </div>
