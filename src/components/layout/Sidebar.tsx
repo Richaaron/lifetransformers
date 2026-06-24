@@ -15,7 +15,7 @@ import { MessageBadge } from "@/components/layout/MessageBadge"
 import { ThemeToggle } from "@/components/theme/ThemeToggle"
 
 const navItems = [
-  { name: "Feed",          href: "/feed",          icon: Home },
+  { name: "Home",          href: "/home",          icon: Home },
   { name: "Friends",       href: "/friends",       icon: Users },
   { name: "Messages",      href: "/messages",      icon: MessageSquare },
   { name: "Groups",        href: "/groups",        icon: Users },
@@ -70,7 +70,7 @@ export function Sidebar() {
 
       {/* Logo */}
       <div className="h-[70px] flex items-center px-5 border-b border-white/[0.06] shrink-0">
-        <Link href="/feed" className="flex items-center gap-3 group">
+        <Link href="/home" className="flex items-center gap-3 group">
           <div className="w-9 h-9 rounded-xl overflow-hidden border border-brand-500/30 shadow-[0_0_16px_rgba(234,179,8,0.2)] transition-all duration-300 group-hover:shadow-[0_0_24px_rgba(234,179,8,0.4)] group-hover:scale-105">
             <Image src="/logo.png" alt="Logo" width={36} height={36} className="object-cover w-full h-full" />
           </div>

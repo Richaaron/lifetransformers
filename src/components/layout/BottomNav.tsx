@@ -23,7 +23,7 @@ export function BottomNav() {
   }, [])
 
   const tabs = [
-    { name: "Feed", href: "/feed", icon: Home },
+    { name: "Home", href: "/home", icon: Home },
     { name: "Friends", href: "/friends", icon: Users },
     { name: "Messages", href: "/messages", icon: MessageSquare },
     { name: "Leaderboard", href: "/leaderboard", icon: Trophy },
@@ -35,7 +35,7 @@ export function BottomNav() {
       <div className="flex items-center justify-around h-16">
         {tabs.map((tab) => {
           const isActive = pathname.startsWith(tab.href.split("/profile")[0] + "/profile") || 
-                          (tab.name === "Feed" && pathname === "/feed")
+                          (tab.name === "Home" && pathname === "/home")
           return (
             <Link
               key={tab.name}

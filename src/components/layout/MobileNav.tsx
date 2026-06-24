@@ -14,7 +14,7 @@ interface MobileNavProps {
 }
 
 const navItems = [
-  { name: "Feed", href: "/feed", icon: Home },
+  { name: "Home", href: "/home", icon: Home },
   { name: "Friends", href: "/friends", icon: Users },
   { name: "Messages", href: "/messages", icon: MessageSquare },
   { name: "Groups", href: "/groups", icon: Users },
