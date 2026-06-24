@@ -18,6 +18,7 @@ export async function markNotificationRead(notificationId: string): Promise<Acti
   if (error) return { error: error.message }
 
   revalidatePath("/notifications")
+  revalidatePath("/", "layout")
   return {}
 }
 
@@ -35,5 +36,6 @@ export async function markAllNotificationsRead(): Promise<ActionResult> {
   if (error) return { error: error.message }
 
   revalidatePath("/notifications")
+  revalidatePath("/", "layout")
   return {}
 }

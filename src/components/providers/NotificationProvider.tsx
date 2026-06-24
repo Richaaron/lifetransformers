@@ -46,7 +46,7 @@ export function NotificationProvider({
     }
     fetchUnreadCount()
 
-    // 2. Subscribe to realtime inserts on the notifications table
+    // 2. Subscribe to realtime inserts and updates on the notifications table
     const channel = supabase
       .channel('realtime-notifications')
       .on(
@@ -110,6 +110,27 @@ export function NotificationProvider({
             duration: 5000,
             className: "glass-strong border border-surface-700/50 text-white",
           })
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${currentUserId}`,
+        },
+        async () => {
+          // Refetch unread count when a notification is updated (e.g., marked as read)
+          const { count, error } = await supabase
+            .from('notifications')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', currentUserId)
+            .eq('read', false)
+          
+          if (!error && count !== null) {
+            setUnreadCount(count)
+          }
         }
       )
       .subscribe()
