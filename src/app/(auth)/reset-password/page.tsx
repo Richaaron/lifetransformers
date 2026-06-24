@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
+
+export const dynamic = 'force-dynamic'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
