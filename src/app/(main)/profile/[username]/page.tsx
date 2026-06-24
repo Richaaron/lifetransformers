@@ -3,7 +3,8 @@ import { notFound } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { LEVEL_NAMES, getXpProgress, type ReactionType } from "@/lib/types"
+import { LEVEL_NAMES, getXpProgress } from "@/lib/types"
+import type { ReactionType } from "@/lib/actions/reactions"
 import { Star, Trophy, MessageSquare, Heart, Calendar, MapPin, Gamepad2, User, Pencil } from "lucide-react"
 import Link from "next/link"
 import { ProfileAvatarModal } from "@/components/profile/ProfileAvatarModal"
@@ -19,7 +20,7 @@ export async function generateMetadata({ params }: { params: Promise<{ username:
   }
 }
 
-export default async function ProfilePage({ params }: { params: Promise<{ username: string }>) {
+export default async function ProfilePage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = await params
   const supabase = await createClient()
   
@@ -260,10 +261,12 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
             <PostCard
               key={post.id}
               post={post}
-              currentUserId={currentUser?.id || null}
-              reactionCounts={reactionMap[post.id]?.counts || { amen: 0, love: 0, praying: 0, inspired: 0, like: 0 }}
-              userReaction={reactionMap[post.id]?.userReaction || null}
-              totalReactions={reactionMap[post.id]?.total || 0}
+              currentUserId={currentUser?.id as string}
+              reactionSummary={{
+                counts: reactionMap[post.id]?.counts || { amen: 0, love: 0, praying: 0, inspired: 0, like: 0 },
+                userReaction: reactionMap[post.id]?.userReaction || null,
+                total: reactionMap[post.id]?.total || 0
+              }}
             />
           ))
         ) : (
