@@ -40,3 +40,22 @@ remove-bg.js
 
 # Original image
 Gemini_Generated_Image_*.png
+.codersinflow
+.vscode
+node_modules
+.env
+.venv
+.codex
+out
+dist
+*.vsix
+.claude
+CLAUDE.md
+.git
+*.log
+*.tmp
+__pycache__
+*.pyc
+.env.local
+.next
+.github
