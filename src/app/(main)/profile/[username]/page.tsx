@@ -1,15 +1,16 @@
 import { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { getInitials } from "@/lib/utils"
-import { LEVEL_NAMES, getXpProgress } from "@/lib/types"
-import { Star, Trophy, MessageSquare, Heart, Calendar, MapPin, Gamepad2, User, Pencil, Mail } from "lucide-react"
+import { LEVEL_NAMES, getXpProgress, type ReactionType } from "@/lib/types"
+import { Star, Trophy, MessageSquare, Heart, Calendar, MapPin, Gamepad2, User, Pencil } from "lucide-react"
 import Link from "next/link"
 import { ProfileAvatarModal } from "@/components/profile/ProfileAvatarModal"
 import { ProfileMessageButton } from "@/components/profile/ProfileMessageButton"
+import { getProfilePosts } from "@/lib/queries/profile-posts"
+import { PostCard } from "@/components/feed/PostCard"
+import { PostComposer } from "@/components/feed/PostComposer"
 
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
   const { username } = await params
@@ -18,7 +19,7 @@ export async function generateMetadata({ params }: { params: Promise<{ username:
   }
 }
 
-export default async function ProfilePage({ params }: { params: Promise<{ username: string }> }) {
+export default async function ProfilePage({ params }: { params: Promise<{ username: string }>) {
   const { username } = await params
   const supabase = await createClient()
   
@@ -73,8 +74,41 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   else if (level >= 2) filledStars = 1
   else filledStars = 1
 
+  // Fetch user's posts
+  const posts = await getProfilePosts(profile.id)
+
+  // Fetch reaction map for posts
+  let reactionMap: Record<string, {
+    counts: Record<ReactionType, number>
+    userReaction: ReactionType | null
+    total: number
+  }> = {}
+  const postIds = posts.map((p: any) => p.id)
+  if (postIds.length > 0) {
+    const { data: reactions } = await supabase
+      .from("post_reactions")
+      .select("post_id, user_id, reaction_type")
+      .in("post_id", postIds)
+    for (const r of reactions || []) {
+      const pid = r.post_id
+      if (!reactionMap[pid]) {
+        reactionMap[pid] = {
+          counts: { amen: 0, love: 0, praying: 0, inspired: 0, like: 0 },
+          userReaction: null,
+          total: 0,
+        }
+      }
+      const entry = reactionMap[pid]
+      entry.counts[r.reaction_type as ReactionType] = (entry.counts[r.reaction_type as ReactionType] || 0) + 1
+      entry.total++
+      if (currentUser && r.user_id === currentUser.id) {
+        entry.userReaction = r.reaction_type as ReactionType
+      }
+    }
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-2xl mx-auto pb-12">
       <Card className="bg-surface-900 border-surface-800 overflow-hidden">
         {/* Cover Banner */}
         <div className="h-48 sm:h-64 relative bg-surface-800">
@@ -211,6 +245,35 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
           </CardContent>
         </Card>
       )}
+
+      {/* Profile Wall / Posts */}
+      <div className="space-y-4">
+        {isOwnProfile && currentUser && (
+          <PostComposer currentUser={{
+            id: currentUser.id,
+            avatar_url: profile.avatar_url,
+            display_name: profile.display_name,
+          }} />
+        )}
+        {posts.length > 0 ? (
+          posts.map((post: any) => (
+            <PostCard
+              key={post.id}
+              post={post}
+              currentUserId={currentUser?.id || null}
+              reactionCounts={reactionMap[post.id]?.counts || { amen: 0, love: 0, praying: 0, inspired: 0, like: 0 }}
+              userReaction={reactionMap[post.id]?.userReaction || null}
+              totalReactions={reactionMap[post.id]?.total || 0}
+            />
+          ))
+        ) : (
+          <Card className="bg-surface-900 border-surface-800">
+            <CardContent className="pt-6 pb-6 text-center">
+              <p className="text-surface-400">No posts yet</p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   )
 }
