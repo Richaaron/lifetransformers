@@ -12,6 +12,7 @@ export function ChatWidget() {
   const [initialMessages, setInitialMessages] = useState<any[]>([])
   const [otherUser, setOtherUser] = useState<any>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [currentUser, setCurrentUser] = useState<{ id: string; display_name: string; avatar_url?: string } | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
@@ -39,6 +40,15 @@ export function ChatWidget() {
         return
       }
       setCurrentUserId(user.id)
+
+      // Fetch current user's profile
+      const { data: currentUserProfile } = await supabase
+        .from("profiles")
+        .select("id, display_name, avatar_url")
+        .eq("id", user.id)
+        .single()
+      
+      setCurrentUser(currentUserProfile || { id: user.id, display_name: "User" })
 
       // Fetch other user details
       const { data: participants, error: partError } = await supabase
@@ -112,11 +122,12 @@ export function ChatWidget() {
           </button>
           <p className="text-red-400">{error}</p>
         </div>
-      ) : otherUser && currentUserId ? (
+      ) : otherUser && currentUserId && currentUser ? (
         <MessageThread
           conversationId={activeConversationId!}
           initialMessages={initialMessages}
           currentUserId={currentUserId}
+          currentUser={currentUser}
           otherUser={otherUser}
           onClose={closeChat}
           isWidget={true}

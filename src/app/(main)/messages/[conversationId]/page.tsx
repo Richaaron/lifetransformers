@@ -19,9 +19,10 @@ export default async function ConversationPage({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect("/login")
 
-  const [initialMessages, otherUser] = await Promise.all([
+  const [initialMessages, otherUser, currentUserProfile] = await Promise.all([
     getMessages(conversationId),
-    getConversationDetails(conversationId)
+    getConversationDetails(conversationId),
+    supabase.from("profiles").select("id, display_name, avatar_url").eq("id", user.id).single()
   ])
 
   if (!otherUser) {
@@ -36,6 +37,7 @@ export default async function ConversationPage({
           conversationId={conversationId}
           initialMessages={initialMessages}
           currentUserId={user.id}
+          currentUser={currentUserProfile.data || { id: user.id, display_name: "User" }}
           otherUser={otherUser}
         />
       </div>

@@ -20,12 +20,17 @@ interface MessageThreadProps {
   conversationId: string
   initialMessages: any[]
   currentUserId: string
+  currentUser: {
+    id: string
+    display_name: string
+    avatar_url?: string
+  }
   otherUser: any
   onClose?: () => void
   isWidget?: boolean
 }
 
-export function MessageThread({ conversationId, initialMessages, currentUserId, otherUser, onClose, isWidget }: MessageThreadProps) {
+export function MessageThread({ conversationId, initialMessages, currentUserId, currentUser, otherUser, onClose, isWidget }: MessageThreadProps) {
   const [messages, setMessages] = useRealtimeMessages(conversationId, initialMessages)
   const [content, setContent] = useState("")
   const [isSending, setIsSending] = useState(false)
@@ -277,7 +282,7 @@ export function MessageThread({ conversationId, initialMessages, currentUserId, 
           conversationId={conversationId}
           otherUser={otherUser}
           callType={callType}
-          currentUserId={currentUserId}
+          currentUser={currentUser}
           onClose={() => setShowCallModal(false)}
         />
       )}

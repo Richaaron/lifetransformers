@@ -1,16 +1,22 @@
 "use client"
 
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { getInitials } from "@/lib/utils"
-import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff, X } from "lucide-react"
+import { Phone, PhoneOff, PhoneCall, Mic, MicOff, Video, VideoOff, X } from "lucide-react"
+import { useOneOnOneCall } from "@/hooks/useOneOnOneCall"
+import { createCall, updateCallStatus, endCall as endCallServer } from "@/lib/actions/calls"
 
 interface VoiceCallModalProps {
   conversationId: string
   otherUser: any
   callType: "voice" | "video"
-  currentUserId: string
+  currentUser: {
+    id: string
+    display_name: string
+    avatar_url?: string
+  }
   onClose: () => void
 }
 
@@ -18,121 +24,122 @@ export function VoiceCallModal({
   conversationId, 
   otherUser, 
   callType, 
-  currentUserId,
+  currentUser,
   onClose 
 }: VoiceCallModalProps) {
-  const [callState, setCallState] = useState<"connecting" | "ringing" | "active" | "ended">("connecting")
-  const [isMuted, setIsMuted] = useState(false)
-  const [isVideoOff, setIsVideoOff] = useState(false)
-  const [duration, setDuration] = useState(0)
+  const [callId, setCallId] = useState<string | null>(null)
+  const [isCaller, setIsCaller] = useState(true)
+  const [isWaitingToAccept, setIsWaitingToAccept] = useState(true)
   const localVideoRef = useRef<HTMLVideoElement>(null)
   const remoteVideoRef = useRef<HTMLVideoElement>(null)
-  const peerConnectionRef = useRef<RTCPeerConnection | null>(null)
-  const localStreamRef = useRef<MediaStream | null>(null)
-  const timerRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Initialize call
+  const {
+    callState,
+    localStream,
+    remoteStream,
+    isMuted,
+    isVideoOff,
+    callDuration,
+    formatDuration,
+    toggleMute,
+    toggleVideo,
+    endCall: endCallWebRTC
+  } = useOneOnOneCall({
+    callId: callId || "temp",
+    currentUser,
+    otherUserId: otherUser.id,
+    callType,
+    isCaller,
+    onCallEnded: async () => {
+      if (callId) {
+        await endCallServer(callId)
+      }
+      onClose()
+    }
+  })
+
   useEffect(() => {
     const initCall = async () => {
-      try {
-        // Get local media
-        const constraints: MediaStreamConstraints = {
-          audio: true,
-          video: callType === "video"
-        }
-        
-        const stream = await navigator.mediaDevices.getUserMedia(constraints)
-        localStreamRef.current = stream
-
-        if (localVideoRef.current) {
-          localVideoRef.current.srcObject = stream
-        }
-
-        // Create peer connection (using Google's STUN server for demo)
-        const pc = new RTCPeerConnection({
-          iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' }
-          ]
-        })
-
-        peerConnectionRef.current = pc
-
-        // Add local tracks to peer connection
-        stream.getTracks().forEach(track => {
-          pc.addTrack(track, stream)
-        })
-
-        // Handle remote stream
-        pc.ontrack = (event) => {
-          if (remoteVideoRef.current) {
-            remoteVideoRef.current.srcObject = event.streams[0]
-          }
-        }
-
-        // Simulate call connection (in real app, use Supabase Realtime for signaling)
-        setTimeout(() => {
-          setCallState("ringing")
-        }, 1000)
-
-        setTimeout(() => {
-          setCallState("active")
-          // Start duration timer
-          timerRef.current = setInterval(() => {
-            setDuration(prev => prev + 1)
-          }, 1000)
-        }, 3000)
-
-      } catch (err) {
-        console.error('Error initializing call:', err)
-        alert('Could not access camera/microphone')
+      const result = await createCall(otherUser.id, callType)
+      if (result.data) {
+        setCallId(result.data.id)
+        setIsWaitingToAccept(true)
+      } else {
+        alert("Failed to start call: " + result.error)
         onClose()
       }
     }
-
     initCall()
+  }, [])
 
-    return () => {
-      // Cleanup
-      if (timerRef.current) clearInterval(timerRef.current)
-      localStreamRef.current?.getTracks().forEach(track => track.stop())
-      peerConnectionRef.current?.close()
+  // Update video elements with srcObject
+  useEffect(() => {
+    if (localVideoRef.current && localStream) {
+      localVideoRef.current.srcObject = localStream
     }
-  }, [callType, onClose])
-
-  const toggleMute = () => {
-    if (localStreamRef.current) {
-      const audioTrack = localStreamRef.current.getAudioTracks()[0]
-      if (audioTrack) {
-        audioTrack.enabled = !audioTrack.enabled
-        setIsMuted(!isMuted)
-      }
+    if (remoteVideoRef.current && remoteStream) {
+      remoteVideoRef.current.srcObject = remoteStream
     }
-  }
+  }, [localStream, remoteStream])
 
-  const toggleVideo = () => {
-    if (localStreamRef.current) {
-      const videoTrack = localStreamRef.current.getVideoTracks()[0]
-      if (videoTrack) {
-        videoTrack.enabled = !videoTrack.enabled
-        setIsVideoOff(!isVideoOff)
-      }
+  const handleAccept = async () => {
+    if (callId) {
+      await updateCallStatus(callId, "answered")
+      setIsWaitingToAccept(false)
     }
   }
 
-  const endCall = () => {
-    if (timerRef.current) clearInterval(timerRef.current)
-    localStreamRef.current?.getTracks().forEach(track => track.stop())
-    peerConnectionRef.current?.close()
-    setCallState("ended")
-    setTimeout(onClose, 500)
+  const handleDecline = async () => {
+    if (callId) {
+      await updateCallStatus(callId, "declined")
+    }
+    onClose()
   }
 
-  const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  const handleEndCall = async () => {
+    if (callId) {
+      await endCallServer(callId)
+    }
+    endCallWebRTC()
   }
 
+  if (isWaitingToAccept && isCaller) {
+    // Ringing UI for caller
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm">
+        <div className="w-full max-w-lg mx-4">
+          <div className="bg-surface-900 rounded-2xl p-8 text-center">
+            <Avatar className="w-32 h-32 mx-auto mb-6 border-4 border-brand-500 animate-pulse">
+              <AvatarImage src={otherUser.avatar_url || ""} />
+              <AvatarFallback className="text-4xl">{getInitials(otherUser.display_name)}</AvatarFallback>
+            </Avatar>
+            <h3 className="text-2xl font-semibold text-white">{otherUser.display_name}</h3>
+            <p className="text-surface-300 mt-2">Ringing...</p>
+            <div className="flex items-center justify-center gap-4 mt-8">
+              <Button
+                onClick={handleEndCall}
+                size="icon"
+                variant="destructive"
+                className="h-16 w-16 rounded-full bg-red-500 hover:bg-red-600"
+              >
+                <PhoneOff className="w-8 h-8" />
+              </Button>
+              <Button
+                onClick={onClose}
+                size="icon"
+                variant="ghost"
+                className="h-14 w-14 rounded-full text-surface-400 hover:text-white"
+              >
+                <X className="w-6 h-6" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Call UI
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm">
       <div className="w-full max-w-lg mx-4">
@@ -179,7 +186,7 @@ export function VoiceCallModal({
         {/* Voice Call UI */}
         {callType === "voice" && (
           <div className="bg-surface-900 rounded-2xl p-8 text-center">
-            <Avatar className="w-32 h-32 mx-auto mb-6 border-4 border-brand-500 animate-pulse">
+            <Avatar className={`w-32 h-32 mx-auto mb-6 border-4 border-brand-500 ${callState !== "active" ? "animate-pulse" : ""}`}>
               <AvatarImage src={otherUser.avatar_url || ""} />
               <AvatarFallback className="text-4xl">{getInitials(otherUser.display_name)}</AvatarFallback>
             </Avatar>
@@ -187,7 +194,7 @@ export function VoiceCallModal({
             <p className="text-surface-300 mt-2">
               {callState === "connecting" && "Connecting..."}
               {callState === "ringing" && "Ringing..."}
-              {callState === "active" && formatDuration(duration)}
+              {callState === "active" && formatDuration(callDuration)}
               {callState === "ended" && "Call ended"}
             </p>
           </div>
@@ -219,16 +226,39 @@ export function VoiceCallModal({
             </>
           )}
 
-          <Button
-            onClick={endCall}
-            size="icon"
-            variant="destructive"
-            className="h-16 w-16 rounded-full bg-red-500 hover:bg-red-600"
-          >
-            <PhoneOff className="w-8 h-8" />
-          </Button>
+          {isWaitingToAccept && !isCaller && (
+            <>
+              <Button
+                onClick={handleDecline}
+                size="icon"
+                variant="destructive"
+                className="h-16 w-16 rounded-full bg-red-500 hover:bg-red-600"
+              >
+                <PhoneOff className="w-8 h-8" />
+              </Button>
+              <Button
+                onClick={handleAccept}
+                size="icon"
+                variant="default"
+                className="h-16 w-16 rounded-full bg-green-500 hover:bg-green-600"
+              >
+                <PhoneCall className="w-8 h-8" />
+              </Button>
+            </>
+          )}
 
-          {callState !== "active" && (
+          {callState !== "ringing" && (
+            <Button
+              onClick={handleEndCall}
+              size="icon"
+              variant="destructive"
+              className="h-16 w-16 rounded-full bg-red-500 hover:bg-red-600"
+            >
+              <PhoneOff className="w-8 h-8" />
+            </Button>
+          )}
+
+          {callState !== "active" && !isWaitingToAccept && (
             <Button
               onClick={onClose}
               size="icon"
