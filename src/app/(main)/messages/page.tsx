@@ -26,15 +26,19 @@ function MessagesPageInner() {
 
   useEffect(() => {
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) setCurrentUserId(user.id)
-    })
-    if (targetUserId) {
-      startConversation(targetUserId)
-    } else {
-      loadConversations()
+    const init = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        setCurrentUserId(user.id)
+        if (targetUserId) {
+          startConversation(targetUserId)
+        } else {
+          loadConversations()
+        }
+      }
     }
-  }, [])
+    init()
+  }, [targetUserId])
 
   const startConversation = async (otherUserId: string) => {
     setCreating(true)
