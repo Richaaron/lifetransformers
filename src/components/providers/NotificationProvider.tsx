@@ -144,18 +144,8 @@ export function NotificationProvider({
     setUnreadCount((prev) => Math.max(0, prev - 1))
   }
 
-  const markAllAsRead = async () => {
+  const markAllAsRead = () => {
     setUnreadCount(0)
-    // Also refetch just in case
-    const { count, error } = await supabase
-      .from('notifications')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', currentUserId)
-      .eq('read', false)
-    
-    if (!error && count !== null) {
-      setUnreadCount(count)
-    }
   }
 
   return (
