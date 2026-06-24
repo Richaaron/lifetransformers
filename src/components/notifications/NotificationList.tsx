@@ -1,6 +1,6 @@
 "use client"
 
-import { useTransition } from "react"
+import { useTransition, useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { getInitials, formatRelativeTime } from "@/lib/utils"
@@ -13,14 +13,17 @@ interface NotificationListProps {
   notifications: any[]
 }
 
-export function NotificationList({ notifications }: NotificationListProps) {
+export function NotificationList({ notifications: initialNotifications }: NotificationListProps) {
   const [isPending, startTransition] = useTransition()
+  const [notifications, setNotifications] = useState(initialNotifications)
   const { decrementUnreadCount, markAllAsRead } = useNotifications()
 
   const handleMarkAllRead = () => {
     startTransition(() => {
       markAllNotificationsRead()
       markAllAsRead()
+      // Optimistically update all notifications to read
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })))
     })
   }
 
@@ -29,6 +32,7 @@ export function NotificationList({ notifications }: NotificationListProps) {
       decrementUnreadCount()
       startTransition(() => {
         markNotificationRead(id)
+        setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
       })
     }
   }
