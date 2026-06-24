@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { getInitials, formatRelativeTime } from "@/lib/utils"
 import { markNotificationRead, markAllNotificationsRead } from "@/lib/actions/notifications"
-import { UserPlus, UserCheck, Heart, MessageCircle, Users, ShieldAlert } from "lucide-react"
+import { UserPlus, UserCheck, Heart, MessageCircle, Users, ShieldAlert, Phone, Video } from "lucide-react"
 import Link from "next/link"
 import { useNotifications } from "@/components/providers/NotificationProvider"
 
@@ -82,6 +82,18 @@ export function NotificationList({ notifications: initialNotifications }: Notifi
           icon: <Users className="w-4 h-4 text-purple-500" />,
           text: <span><strong>{actorName}</strong> invited you to a group.</span>,
           href: "/groups"
+        }
+      case 'voice_call':
+        return {
+          icon: <Phone className="w-4 h-4 text-green-500" />,
+          text: <span><strong>{actorName}</strong> is calling you (voice).</span>,
+          href: "/messages"
+        }
+      case 'video_call':
+        return {
+          icon: <Video className="w-4 h-4 text-blue-500" />,
+          text: <span><strong>{actorName}</strong> is calling you (video).</span>,
+          href: "/messages"
         }
       case 'system':
         return {

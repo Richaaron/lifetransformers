@@ -22,6 +22,18 @@ export async function createCall(receiverId: string, callType: "voice" | "video"
 
   if (error) return { error: error.message }
 
+  // Create notification for receiver
+  await supabase
+    .from("notifications")
+    .insert({
+      user_id: receiverId,
+      actor_id: user.id,
+      type: callType === "video" ? "video_call" : "voice_call",
+      resource_id: data.id,
+      resource_type: "call",
+      read: false,
+    })
+
   revalidatePath("/")
   return { data }
 }
