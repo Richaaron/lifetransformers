@@ -4,12 +4,13 @@ import { useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { getInitials, formatRelativeTime } from "@/lib/utils"
-import { Heart, MessageCircle, MoreHorizontal, Trash2, Send, ChevronDown, ChevronUp } from "lucide-react"
+import { Heart, MessageCircle, MoreHorizontal, Trash2, Send, ChevronDown, ChevronUp, Flag } from "lucide-react"
 import Link from "next/link"
 import { deletePost } from "@/lib/actions/posts"
 import { RichTextContent } from "@/components/feed/RichTextContent"
 import { ReactionBar } from "@/components/feed/ReactionBar"
 import type { ReactionType } from "@/lib/actions/reactions"
+import ReportModal from "./ReportModal"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -189,14 +190,24 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
             </div>
           </Link>
 
-          {isAuthor && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="w-8 h-8 rounded-xl flex items-center justify-center text-surface-500 hover:text-white hover:bg-white/[0.07] transition-all duration-200 opacity-0 group-hover:opacity-100 press-effect">
-                  <MoreHorizontal className="w-4 h-4" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-surface-800/95 backdrop-blur-xl border-surface-700/60 rounded-xl shadow-2xl">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="w-8 h-8 rounded-xl flex items-center justify-center text-surface-500 hover:text-white hover:bg-white/[0.07] transition-all duration-200 opacity-0 group-hover:opacity-100 press-effect">
+                <MoreHorizontal className="w-4 h-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-surface-800/95 backdrop-blur-xl border-surface-700/60 rounded-xl shadow-2xl">
+              <ReportModal
+                resourceType="post"
+                resourceId={post.id}
+                trigger={
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-pointer rounded-lg gap-2">
+                    <Flag className="w-4 h-4" />
+                    Report Post
+                  </DropdownMenuItem>
+                }
+              />
+              {isAuthor && (
                 <DropdownMenuItem
                   onClick={handleDelete}
                   className="text-red-400 focus:bg-red-500/10 focus:text-red-300 cursor-pointer rounded-lg gap-2"
@@ -204,9 +215,9 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
                   <Trash2 className="w-4 h-4" />
                   Delete Post
                 </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Content */}
