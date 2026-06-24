@@ -26,6 +26,7 @@ function MessagesPageInner() {
 
   useEffect(() => {
     const supabase = createClient()
+    let channel: any
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
@@ -35,9 +36,31 @@ function MessagesPageInner() {
         } else {
           loadConversations()
         }
+
+        // Subscribe to realtime changes
+        channel = supabase
+          .channel('realtime-messages')
+          .on('postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'messages',
+            },
+            () => {
+              // Reload conversations when messages change
+              loadConversations()
+            }
+          )
+          .subscribe()
       }
     }
     init()
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel)
+      }
+    }
   }, [targetUserId])
 
   const startConversation = async (otherUserId: string) => {
