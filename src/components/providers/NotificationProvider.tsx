@@ -4,17 +4,20 @@ import { createContext, useContext, useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 import { Bell } from "lucide-react"
+import { subscribeToPushNotifications } from "@/lib/push-notifications"
 
 interface NotificationContextType {
   unreadCount: number
   decrementUnreadCount: () => void
   markAllAsRead: () => void
+  requestPushNotifications: () => Promise<boolean>
 }
 
 const NotificationContext = createContext<NotificationContextType>({
   unreadCount: 0,
   decrementUnreadCount: () => {},
   markAllAsRead: () => {},
+  requestPushNotifications: async () => false,
 })
 
 export const useNotifications = () => useContext(NotificationContext)
@@ -28,6 +31,16 @@ export function NotificationProvider({
 }) {
   const [unreadCount, setUnreadCount] = useState(0)
   const supabase = createClient()
+
+  const requestPushNotifications = async () => {
+    const success = await subscribeToPushNotifications()
+    if (success) {
+      toast.success("Push notifications enabled!")
+    } else {
+      toast.error("Failed to enable push notifications")
+    }
+    return success
+  }
 
   useEffect(() => {
     if (!currentUserId) return
@@ -149,7 +162,7 @@ export function NotificationProvider({
   }
 
   return (
-    <NotificationContext.Provider value={{ unreadCount, decrementUnreadCount, markAllAsRead }}>
+    <NotificationContext.Provider value={{ unreadCount, decrementUnreadCount, markAllAsRead, requestPushNotifications }}>
       {children}
     </NotificationContext.Provider>
   )

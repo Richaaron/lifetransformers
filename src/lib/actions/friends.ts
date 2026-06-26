@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { ActionResult } from "@/lib/types"
+import { sendPushNotification } from "./push-notifications"
 
 export async function sendFriendRequest(targetUserId: string): Promise<ActionResult> {
   const supabase = await createClient()
@@ -30,6 +31,21 @@ export async function sendFriendRequest(targetUserId: string): Promise<ActionRes
     actor_id: user.id,
     type: "friend_request",
   })
+
+  // Get actor's display name for push notification
+  const { data: actor } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", user.id)
+    .single()
+
+  // Send push notification
+  await sendPushNotification(
+    targetUserId,
+    "New Friend Request",
+    `${actor?.display_name || "Someone"} sent you a friend request!`,
+    "/friends"
+  )
 
   revalidatePath("/friends")
   return {}
@@ -63,6 +79,21 @@ export async function acceptFriendRequest(friendshipId: string): Promise<ActionR
     actor_id: user.id,
     type: "friend_accepted",
   })
+
+  // Get actor's display name for push notification
+  const { data: actor } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", user.id)
+    .single()
+
+  // Send push notification
+  await sendPushNotification(
+    friendship.user_id,
+    "Friend Request Accepted",
+    `${actor?.display_name || "Someone"} accepted your friend request!`,
+    "/friends"
+  )
 
   revalidatePath("/friends")
   return {}

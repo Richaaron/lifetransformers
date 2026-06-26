@@ -59,3 +59,7 @@ __pycache__
 .env.local
 .next
 .github
+
+# Generated PWA files
+public/sw.js
+public/worker-*.js
