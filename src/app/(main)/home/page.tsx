@@ -1,12 +1,8 @@
 import { Metadata } from "next"
 import { getFeed } from "@/lib/queries/feed"
-import { PostComposer } from "@/components/feed/PostComposer"
-import { InfiniteFeed } from "@/components/feed/InfiniteFeed"
-import { FeedSkeleton } from "@/components/feed/LoadingSkeleton"
-import { Suspense } from "react"
 import { createClient } from "@/lib/supabase/server"
 import type { ReactionType } from "@/lib/actions/reactions"
-import Image from "next/image"
+import { ClientHomePage } from "@/components/feed/ClientHomePage"
 
 export const metadata: Metadata = {
   title: "Home - Life Transformers",
@@ -62,43 +58,12 @@ export default async function HomePage() {
   }
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto pb-12">
-      {/* Hero Banner */}
-      <div className="relative w-full h-48 sm:h-64 rounded-2xl overflow-hidden shadow-2xl animate-fade-in group">
-        <Image
-          src="/feed-banner.png"
-          alt="Life Transformers Community"
-          fill
-          className="object-cover transition-transform duration-1000 group-hover:scale-105"
-          priority
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-surface-950 via-surface-950/20 to-transparent" />
-        <div className="absolute bottom-6 left-6 sm:bottom-8 sm:left-8 animate-fade-up delay-200">
-          <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-tight mb-2">
-            Home
-          </h1>
-          <p className="text-surface-200 text-sm sm:text-base font-light max-w-md">
-            Connect, share, and grow with the Life Transformers community.
-          </p>
-        </div>
-      </div>
-      
-      {profile && (
-        <div className="animate-fade-up delay-100">
-          <PostComposer currentUser={profile} />
-        </div>
-      )}
-
-      <div className="pt-4">
-        <Suspense fallback={<FeedSkeleton />}>
-          <InfiniteFeed
-            initialPosts={feed}
-            initialReactionMap={reactionMap}
-            currentUserId={user.id}
-            hasMoreInitial={hasMoreInitial}
-          />
-        </Suspense>
-      </div>
-    </div>
+    <ClientHomePage
+      profile={profile}
+      feed={feed}
+      reactionMap={reactionMap}
+      userId={user.id}
+      hasMoreInitial={hasMoreInitial}
+    />
   )
 }
