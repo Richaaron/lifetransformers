@@ -4,15 +4,26 @@ import webpush from "web-push"
 import admin from "firebase-admin"
 import { createClient } from "@/lib/supabase/server"
 
-// Initialize Firebase Admin if not already initialized
-if (!admin.apps.length) {
-  // Use FIREBASE_SERVICE_ACCOUNT_KEY environment variable (should be JSON string)
-  const serviceAccount = JSON.parse(
-    process.env.FIREBASE_SERVICE_ACCOUNT_KEY || "{}"
-  )
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-  })
+// Initialize Firebase Admin lazily
+let firebaseApp: admin.app.App | null = null
+
+const getFirebaseApp = () => {
+  if (firebaseApp) {
+    return firebaseApp
+  }
+  if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+    try {
+      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
+      firebaseApp = admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+      })
+      return firebaseApp
+    } catch (error) {
+      console.error("Error initializing Firebase Admin:", error)
+      return null
+    }
+  }
+  return null
 }
 
 const vapidKeys = {
@@ -37,7 +48,7 @@ export async function sendPushNotification(
   // Get all push subscriptions and FCM tokens for this user
   const { data: userDevices } = await supabase
     .from("user_devices")
-    .select("push_subscription, fcm_token")
+    .select("push_subscription, fcm_token, id")
     .eq("user_id", userId)
     .or("push_subscription.is.not.null,fcm_token.is.not.null")
 
@@ -50,6 +61,9 @@ export async function sendPushNotification(
     body,
     url,
   })
+
+  // Get Firebase app for FCM
+  const firebaseApp = getFirebaseApp()
 
   // Send notifications to all devices
   const promises = userDevices.map(async (device) => {
@@ -73,10 +87,10 @@ export async function sendPushNotification(
       }
     }
 
-    // Send FCM notification if token exists
-    if (device.fcm_token) {
+    // Send FCM notification if token exists and Firebase is initialized
+    if (device.fcm_token && firebaseApp) {
       try {
-        await admin.messaging().send({
+        await firebaseApp.messaging().send({
           token: device.fcm_token,
           notification: {
             title,
