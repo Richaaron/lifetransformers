@@ -1,14 +1,20 @@
 "use client"
 
 import { useState } from "react"
+import { Capacitor } from "@capacitor/core"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { TopBar } from "@/components/layout/TopBar"
 import { MobileNav } from "@/components/layout/MobileNav"
 import { BottomNav } from "@/components/layout/BottomNav"
 import { RightSidebar } from "@/components/layout/RightSidebar"
+import { AndroidLayoutShell } from "@/components/layout/AndroidLayoutShell"
 
 export function ClientLayoutShell({ children }: { children: React.ReactNode }) {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
+
+  if (Capacitor.isNativePlatform()) {
+    return <AndroidLayoutShell>{children}</AndroidLayoutShell>
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-surface-950 text-surface-50">
