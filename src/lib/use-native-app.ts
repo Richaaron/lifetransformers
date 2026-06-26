@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { App } from "@capacitor/app";
-import { StatusBar } from "@capacitor/status-bar";
+import { StatusBar, Style } from "@capacitor/status-bar";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { Capacitor } from "@capacitor/core";
 
@@ -15,7 +15,7 @@ export const useNativeApp = () => {
     const initNativeFeatures = async () => {
       try {
         // Status Bar customization
-        await StatusBar.setStyle({ style: "DARK" });
+        await StatusBar.setStyle({ style: Style.Dark });
         await StatusBar.setBackgroundColor({ color: "#ffffff" });
 
         // Back button handling
