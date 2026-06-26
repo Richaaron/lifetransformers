@@ -4,12 +4,14 @@ import { useState, useEffect } from "react"
 import { TopBar } from "@/components/layout/TopBar"
 import { BottomNav } from "@/components/layout/BottomNav"
 import { Fab } from "@/components/ui/Fab"
-import { Plus } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
+import { Home, Users, MessageSquare, Trophy, User, Plus, Edit3 } from "lucide-react"
 
 export function AndroidLayoutShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
   const [isFabExtended, setIsFabExtended] = useState(true)
-  const router = useRouter()
+  const [fabIcon, setFabIcon] = useState<"plus" | "pencil">("plus")
+  const [fabLabel, setFabLabel] = useState("New Post")
 
   useEffect(() => {
     const handleScroll = () => {
@@ -21,27 +23,55 @@ export function AndroidLayoutShell({ children }: { children: React.ReactNode }) 
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
+  // Customize FAB based on current screen for Android
+  useEffect(() => {
+    if (pathname === "/home") {
+      setFabIcon("plus")
+      setFabLabel("New Post")
+    } else if (pathname.startsWith("/messages")) {
+      setFabIcon("pencil")
+      setFabLabel("New Message")
+    } else {
+      setFabIcon("plus")
+      setFabLabel("Create")
+    }
+  }, [pathname])
+
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-surface-950 text-surface-50">
-      {/* Top App Bar */}
-      <TopBar onMenuClick={() => {}} />
+      {/* Android-style Top App Bar with elevation shadow */}
+      <div className="sticky top-0 z-20 bg-surface-950/95 backdrop-blur-xl border-b border-white/5">
+        <TopBar onMenuClick={() => {}} />
+      </div>
 
-      {/* Main Content */}
+      {/* Main Content with padding for Android safe areas */}
       <main className="flex-1 overflow-y-auto pb-24">
-        <div className="max-w-xl mx-auto px-4 py-4">{children}</div>
+        <div className="max-w-lg mx-auto px-3 py-3">{children}</div>
       </main>
 
-      {/* Floating Action Button (Android Classic!) */}
-      <Fab
-        icon="plus"
-        extended={isFabExtended}
-        label="New Post"
-        onClick={() => router.push("/home")}
-        className="bottom-24 right-6 z-30"
-      />
+      {/* Android-specific Floating Action Button (Material Design 3!) */}
+      {(pathname === "/home" || pathname.startsWith("/messages")) && (
+        <Fab
+          icon={fabIcon}
+          extended={isFabExtended}
+          label={fabLabel}
+          onClick={() => {
+            if (pathname === "/home") {
+              window.scrollTo({ top: 0, behavior: "smooth" })
+              setTimeout(() => {
+                const composer = document.querySelector('textarea')
+                if (composer) composer.focus()
+              }, 300)
+            }
+          }}
+          className="bottom-24 right-5 z-30"
+        />
+      )}
 
-      {/* Bottom Navigation */}
-      <BottomNav />
+      {/* Material Design 3 Bottom Navigation */}
+      <div className="border-t border-white/5 bg-surface-950/95 backdrop-blur-xl">
+        <BottomNav />
+      </div>
     </div>
   )
 }
