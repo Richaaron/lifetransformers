@@ -16,9 +16,9 @@ export const metadata: Metadata = {
 export default async function ManageGroupPage({
   params,
 }: {
-  params: { groupId: string }
+  params: Promise<{ groupId: string }>
 }) {
-  const { groupId } = await Promise.resolve(params)
+  const { groupId } = await params
 
   const [group, members] = await Promise.all([
     getGroupManageDetails(groupId),

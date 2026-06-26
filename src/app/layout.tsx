@@ -12,6 +12,14 @@ export const metadata: Metadata = {
   icons: {
     icon: '/logo.png',
   },
+  manifest: '/manifest.json',
+  themeColor: '#eab308',
+  viewport: 'width=device-width, initial-scale=1',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Life Transformers',
+  },
 }
 
 export default function RootLayout({

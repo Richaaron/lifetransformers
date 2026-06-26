@@ -1,0 +1,22 @@
+{
+  "name": "Life Transformers",
+  "short_name": "Life Transformers",
+  "description": "A private social network for Life Transformers ministry",
+  "theme_color": "#eab308",
+  "background_color": "#0a0a14",
+  "display": "standalone",
+  "scope": "/",
+  "start_url": "/home",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
