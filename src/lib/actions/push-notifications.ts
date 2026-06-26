@@ -5,7 +5,7 @@ import admin from "firebase-admin"
 import { createClient } from "@/lib/supabase/server"
 
 // Initialize Firebase Admin lazily
-let firebaseApp: admin.app.App | null = null
+let firebaseApp: any = null
 
 const getFirebaseApp = () => {
   if (firebaseApp) {
