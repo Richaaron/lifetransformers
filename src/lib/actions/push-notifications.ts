@@ -97,11 +97,14 @@ export async function sendPushNotification(
             title,
             body,
           },
+          data: {
+            url,
+          },
           android: {
             priority: "high",
             notification: {
-              channelId: "default",
-              clickAction: "FLUTTER_NOTIFICATION_CLICK",
+              channelId: "notifications",
+              clickAction: "com.lifetransformers.app.NOTIFICATION_CLICK",
             },
           },
         })
