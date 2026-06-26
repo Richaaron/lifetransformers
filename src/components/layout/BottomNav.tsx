@@ -31,8 +31,8 @@ export function BottomNav() {
   ]
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-surface-950 border-t border-surface-800 safe-area-bottom">
-      <div className="flex items-center justify-around h-16">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden safe-area-bottom">
+      <div className="flex items-center justify-around h-20 bg-surface-900/95 backdrop-blur-xl border-t border-white/5">
         {tabs.map((tab) => {
           const isActive = pathname.startsWith(tab.href.split("/profile")[0] + "/profile") || 
                           (tab.name === "Home" && pathname === "/home")
@@ -42,14 +42,19 @@ export function BottomNav() {
               href={tab.href}
               prefetch={true}
               className={cn(
-                "flex flex-col items-center gap-1 px-3 py-1 text-xs transition-colors",
+                "flex flex-col items-center gap-1 px-3 py-2 transition-all duration-300",
                 isActive
-                  ? "text-brand-500"
-                  : "text-surface-400 hover:text-white"
+                  ? "text-brand-400"
+                  : "text-surface-400 hover:text-surface-200"
               )}
             >
-              <tab.icon className={cn("w-5 h-5", isActive && "fill-current")} />
-              <span>{tab.name}</span>
+              <div className={cn(
+                "relative flex items-center justify-center w-14 h-8 rounded-full transition-all duration-300",
+                isActive && "bg-brand-500/15"
+              )}>
+                <tab.icon className={cn("w-6 h-6", isActive && "fill-brand-400/20")} />
+              </div>
+              <span className="text-xs font-medium">{tab.name}</span>
             </Link>
           )
         })}

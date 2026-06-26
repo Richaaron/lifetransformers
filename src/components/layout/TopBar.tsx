@@ -14,27 +14,26 @@ export function TopBar({ onMenuClick }: TopBarProps) {
 
   return (
     <header
-      className="h-[62px] flex items-center justify-between px-4 sticky top-0 z-20 border-b border-white/[0.05]"
+      className="h-[64px] flex items-center justify-between px-4 sticky top-0 z-20 border-b border-white/5"
       style={{
-        background: "rgba(6,6,15,0.88)",
-        backdropFilter: "blur(28px) saturate(160%)",
-        WebkitBackdropFilter: "blur(28px) saturate(160%)",
+        background: "rgba(10,10,20,0.95)",
+        backdropFilter: "blur(24px)",
       }}
     >
       {/* Mobile — Logo + Hamburger */}
       <div className="flex items-center gap-3 md:hidden">
         <button
           onClick={onMenuClick}
-          className="w-9 h-9 rounded-xl flex items-center justify-center text-surface-300 hover:text-white hover:bg-white/[0.07] transition-all duration-200 press-effect"
+          className="w-10 h-10 rounded-full flex items-center justify-center text-surface-300 hover:text-white hover:bg-white/10 transition-all duration-200"
         >
-          <Menu className="w-5 h-5" />
+          <Menu className="w-6 h-6" />
         </button>
-        <Link href="/feed" className="flex items-center gap-2 group">
-          <div className="w-7 h-7 rounded-lg overflow-hidden border border-brand-500/30 shadow-[0_0_10px_rgba(234,179,8,0.2)]">
-            <Image src="/logo.png" alt="Logo" width={28} height={28} className="object-cover w-full h-full" />
+        <Link href="/home" className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-xl overflow-hidden border border-brand-500/30 shadow-[0_0_12px_rgba(234,179,8,0.2)]">
+            <Image src="/logo.png" alt="Logo" width={32} height={32} className="object-cover w-full h-full" />
           </div>
-          <span className="text-[15px] font-bold tracking-tight">
-            <span className="text-gradient-gold">Life</span>
+          <span className="text-lg font-bold tracking-tight">
+            <span className="text-brand-400">Life</span>
             <span className="text-white"> Transformers</span>
           </span>
         </Link>
@@ -44,32 +43,30 @@ export function TopBar({ onMenuClick }: TopBarProps) {
       <div className="hidden md:block" />
 
       {/* Right Controls */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
         {/* Search shortcut */}
         <Link
           href="/search"
-          className="w-9 h-9 rounded-xl flex items-center justify-center text-surface-400 hover:text-white hover:bg-white/[0.07] transition-all duration-200 press-effect"
+          className="w-10 h-10 rounded-full flex items-center justify-center text-surface-400 hover:text-white hover:bg-white/10 transition-all duration-200"
         >
-          <Search className="w-4.5 h-4.5" />
+          <Search className="w-5 h-5" />
         </Link>
 
         {/* Notification Bell */}
         <Link
           href="/notifications"
-          className="relative w-9 h-9 rounded-xl flex items-center justify-center text-surface-400 hover:text-brand-400 hover:bg-brand-500/10 transition-all duration-200 press-effect"
+          className="relative w-10 h-10 rounded-full flex items-center justify-center text-surface-400 hover:text-brand-400 hover:bg-brand-500/10 transition-all duration-200"
         >
-          <Bell className="w-[18px] h-[18px]" />
+          <Bell className="w-5 h-5" />
           {unreadCount > 0 && (
             <>
               {/* Glow pulse */}
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-brand-500 shadow-[0_0_8px_rgba(234,179,8,0.9)]" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-brand-400 animate-ping opacity-70" />
-              {/* Count badge (only if > 1) */}
-              {unreadCount > 1 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-gradient-to-br from-red-500 to-red-600 text-white text-[9px] font-bold flex items-center justify-center shadow-md">
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
-              )}
+              <span className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-brand-500 shadow-[0_0_10px_rgba(234,179,8,0.9)]" />
+              <span className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-brand-400 animate-ping opacity-70" />
+              {/* Count badge */}
+              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center shadow-md">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
             </>
           )}
         </Link>

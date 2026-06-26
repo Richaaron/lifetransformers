@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { getInitials, formatRelativeTime } from "@/lib/utils"
+import { cn } from "@/lib/utils"
 import { Heart, MessageCircle, MoreHorizontal, Trash2, Send, ChevronDown, ChevronUp, Flag } from "lucide-react"
 import Link from "next/link"
 import { deletePost } from "@/lib/actions/posts"
@@ -102,7 +103,6 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
   }
 
   const handleCommentLike = async (commentId: string) => {
-    // Optimistic update
     setComments(prev =>
       prev.map(c => {
         if (c.id === commentId) {
@@ -119,7 +119,6 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
         body: JSON.stringify({ commentId }),
       })
     } catch (err) {
-      // revert on error
       await fetchComments()
     }
   }
@@ -150,41 +149,22 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
   if (isDeleting) return null
 
   return (
-    <article
-      className="group relative rounded-2xl transition-all duration-300"
-      style={{
-        background: "linear-gradient(160deg, rgba(14,12,26,0.88) 0%, rgba(10,10,20,0.75) 100%)",
-        backdropFilter: "blur(24px)",
-        border: "1px solid rgba(255,255,255,0.07)",
-        boxShadow: "0 4px 24px rgba(0,0,0,0.35)",
-      }}
-    >
-      {/* Hover top accent line */}
-      <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-brand-500/0 to-transparent transition-all duration-500 group-hover:via-brand-500/40" />
-
-      <div
-        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-2xl"
-        style={{ boxShadow: "inset 0 0 0 1px rgba(234,179,8,0.1)" }}
-      />
-
-      <div className="relative z-10 p-5 sm:p-6">
+    <article className="rounded-3xl bg-surface-900/70 border border-white/5 overflow-hidden mb-4">
+      <div className="p-5">
         {/* Author Row */}
         <div className="flex items-start justify-between mb-4">
-          <Link href={`/profile/${post.author.username}`} className="flex items-center gap-3 group/author">
-            <div className="relative shrink-0">
-              <Avatar className="w-11 h-11 border-2 border-transparent transition-all duration-300 group-hover/author:border-brand-500/40"
-                style={{ boxShadow: "0 0 0 1px rgba(255,255,255,0.08)" }}>
-                <AvatarImage src={post.author.avatar_url || ""} />
-                <AvatarFallback className="bg-surface-700 text-brand-400 font-bold text-sm">
-                  {getInitials(post.author.display_name)}
-                </AvatarFallback>
-              </Avatar>
-            </div>
+          <Link href={`/profile/${post.author.username}`} className="flex items-center gap-3">
+            <Avatar className="w-12 h-12 border border-brand-500/20">
+              <AvatarImage src={post.author.avatar_url || ""} />
+              <AvatarFallback className="bg-surface-800 text-brand-400 font-bold text-sm">
+                {getInitials(post.author.display_name)}
+              </AvatarFallback>
+            </Avatar>
             <div>
-              <p className="font-bold text-white text-[15px] group-hover/author:text-brand-400 transition-colors duration-200 leading-tight">
+              <p className="font-semibold text-white text-base leading-tight">
                 {post.author.display_name}
               </p>
-              <p suppressHydrationWarning className="text-[12px] text-surface-400 font-medium mt-0.5">
+              <p suppressHydrationWarning className="text-sm text-surface-400 mt-0.5">
                 @{post.author.username} · {formatRelativeTime(post.created_at)}
               </p>
             </div>
@@ -192,16 +172,16 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="w-8 h-8 rounded-xl flex items-center justify-center text-surface-500 hover:text-white hover:bg-white/[0.07] transition-all duration-200 opacity-0 group-hover:opacity-100 press-effect">
-                <MoreHorizontal className="w-4 h-4" />
+              <button className="w-10 h-10 rounded-full flex items-center justify-center text-surface-500 hover:text-white hover:bg-white/10 transition-all duration-200">
+                <MoreHorizontal className="w-5 h-5" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-surface-800/95 backdrop-blur-xl border-surface-700/60 rounded-xl shadow-2xl">
+            <DropdownMenuContent align="end" className="bg-surface-900 border border-white/10 rounded-2xl shadow-2xl">
               <ReportModal
                 resourceType="post"
                 resourceId={post.id}
                 trigger={
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-pointer rounded-lg gap-2">
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="cursor-pointer rounded-xl gap-2 px-3 py-2.5">
                     <Flag className="w-4 h-4" />
                     Report Post
                   </DropdownMenuItem>
@@ -210,7 +190,7 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
               {isAuthor && (
                 <DropdownMenuItem
                   onClick={handleDelete}
-                  className="text-red-400 focus:bg-red-500/10 focus:text-red-300 cursor-pointer rounded-lg gap-2"
+                  className="text-red-400 focus:bg-red-500/10 focus:text-red-300 cursor-pointer rounded-xl gap-2 px-3 py-2.5"
                 >
                   <Trash2 className="w-4 h-4" />
                   Delete Post
@@ -223,25 +203,25 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
         {/* Content */}
         <RichTextContent
           content={post.content}
-          className="text-[15px] text-white/85 mb-4"
+          className="text-base text-white/90 mb-4 leading-relaxed"
         />
 
         {/* Post Image */}
         {post.image_url && (
-          <div className="rounded-xl overflow-hidden border border-white/[0.07] mb-4 shadow-lg">
-            <img src={post.image_url} alt="Post attachment" className="w-full h-auto object-cover max-h-[480px]" />
+          <div className="rounded-2xl overflow-hidden border border-white/5 mb-4">
+            <img src={post.image_url} alt="Post attachment" className="w-full h-auto object-cover" />
           </div>
         )}
 
         {/* Post Video */}
         {post.video_url && (
-          <div className="rounded-xl overflow-hidden border border-white/[0.07] mb-4 shadow-lg">
-            <video src={post.video_url} controls className="w-full max-h-[480px]" />
+          <div className="rounded-2xl overflow-hidden border border-white/5 mb-4">
+            <video src={post.video_url} controls className="w-full" />
           </div>
         )}
 
         {/* Reaction Row */}
-        <div className="flex items-center gap-2 pt-4 border-t border-white/[0.05] flex-wrap">
+        <div className="flex items-center gap-2 pt-3 border-t border-white/5">
           <ReactionBar
             postId={post.id}
             initialSummary={reactionSummary ?? DEFAULT_REACTION_SUMMARY}
@@ -250,54 +230,52 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
           {/* Comment Toggle Button */}
           <button
             onClick={handleToggleComments}
-            className={`btn-reaction ${showComments ? "commented" : "default"}`}
-          >
-            <MessageCircle className="w-4 h-4" />
-            <span>{commentsCount > 0 ? commentsCount : "Comment"}</span>
-            {commentsCount > 0 && (
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-200",
               showComments
-                ? <ChevronUp className="w-3 h-3 opacity-60" />
-                : <ChevronDown className="w-3 h-3 opacity-60" />
+                ? "bg-brand-500/15 text-brand-400"
+                : "text-surface-400 hover:bg-white/10 hover:text-surface-200"
             )}
+          >
+            <MessageCircle className="w-5 h-5" />
+            <span className="text-sm font-medium">{commentsCount > 0 ? commentsCount : "Comment"}</span>
           </button>
         </div>
       </div>
 
       {/* Comments Panel */}
       {showComments && (
-        <div className="relative z-10 border-t border-white/[0.05] px-5 sm:px-6 py-5 space-y-5 rounded-b-2xl"
-          style={{ background: "rgba(0,0,0,0.15)" }}>
-
+        <div className="border-t border-white/5 px-5 pb-5 space-y-4 bg-surface-950/50">
           {/* Comment Input */}
-          <form onSubmit={handleSubmitComment} className="flex items-center gap-3">
-            <Avatar className="w-8 h-8 shrink-0 border border-brand-500/25">
-              <AvatarFallback className="bg-surface-700 text-brand-400 font-bold text-xs">You</AvatarFallback>
+          <form onSubmit={handleSubmitComment} className="flex items-center gap-3 pt-4">
+            <Avatar className="w-9 h-9 shrink-0 border border-brand-500/20">
+              <AvatarFallback className="bg-surface-800 text-brand-400 font-bold text-xs">You</AvatarFallback>
             </Avatar>
             <div className="flex-1 relative">
               <Input
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
                 placeholder="Write a comment…"
-                className="bg-surface-900/60 border-surface-700/50 text-white placeholder:text-surface-500 rounded-full pl-4 pr-11 h-10 text-sm focus:border-brand-500/40 focus:bg-surface-800/70 transition-all input-warm"
+                className="bg-surface-800/60 border-white/10 text-white placeholder:text-surface-500 rounded-full px-4 pr-12 h-11 text-sm focus:border-brand-500/30 focus:bg-surface-800 transition-all"
                 disabled={isSubmittingComment}
               />
               <button
                 type="submit"
                 disabled={!commentText.trim() || isSubmittingComment}
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-brand-500/15 hover:bg-brand-500/25 text-brand-400 flex items-center justify-center transition-all press-effect disabled:opacity-30"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-brand-500 hover:bg-brand-400 text-surface-950 flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                <Send className="w-3.5 h-3.5" />
+                <Send className="w-4 h-4" />
               </button>
             </div>
           </form>
 
           {/* Comments List */}
           {isLoadingComments ? (
-            <div className="text-center py-4">
+            <div className="text-center py-6">
               <p className="text-surface-500 text-sm animate-pulse">Loading comments…</p>
             </div>
           ) : comments.length > 0 ? (
-            <div className="space-y-5">
+            <div className="space-y-4">
               {comments
                 .filter((c: any) => !c.parent_id)
                 .map((comment: any) => {
@@ -306,38 +284,32 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
                   return (
                     <div key={comment.id} className="space-y-3">
                       {/* Main Comment */}
-                      <div className="flex items-start gap-2.5">
+                      <div className="flex items-start gap-3">
                         <Link href={`/profile/${comment.author?.username}`} className="shrink-0 mt-0.5">
-                          <Avatar className="w-7 h-7 border border-surface-700 hover:border-brand-500/30 transition-colors">
+                          <Avatar className="w-8 h-8 border border-surface-700 hover:border-brand-500/20 transition-colors">
                             <AvatarImage src={comment.author?.avatar_url || ""} />
-                            <AvatarFallback className="bg-surface-700 text-[10px] text-brand-400 font-bold">
+                            <AvatarFallback className="bg-surface-800 text-xs text-brand-400 font-bold">
                               {getInitials(comment.author?.display_name)}
                             </AvatarFallback>
                           </Avatar>
                         </Link>
                         <div className="flex-1 space-y-1">
-                          <div
-                            className="rounded-2xl rounded-tl-sm px-4 py-3"
-                            style={{
-                              background: "rgba(255,255,255,0.04)",
-                              border: "1px solid rgba(255,255,255,0.07)",
-                            }}
-                          >
-                            <div className="flex items-baseline gap-2 mb-1.5">
-                              <Link href={`/profile/${comment.author?.username}`} className="text-[13px] font-bold text-white hover:text-brand-400 transition-colors">
+                          <div className="bg-surface-800/50 rounded-2xl rounded-tl-sm px-4 py-2.5">
+                            <div className="flex items-baseline gap-2 mb-1">
+                              <Link href={`/profile/${comment.author?.username}`} className="text-sm font-semibold text-white hover:text-brand-400 transition-colors">
                                 {comment.author?.display_name}
                               </Link>
-                              <span suppressHydrationWarning className="text-[11px] text-surface-500">{formatRelativeTime(comment.created_at)}</span>
+                              <span suppressHydrationWarning className="text-xs text-surface-500">{formatRelativeTime(comment.created_at)}</span>
                             </div>
-                            <p className="text-[13.5px] text-white/80 leading-relaxed">{comment.content}</p>
+                            <p className="text-sm text-white/85 leading-relaxed">{comment.content}</p>
                           </div>
                           {/* Comment actions */}
-                          <div className="flex items-center gap-3 pl-2 text-[11px] font-semibold text-surface-500">
+                          <div className="flex items-center gap-3 pl-2 text-xs font-semibold text-surface-500">
                             <button
                               onClick={() => handleCommentLike(comment.id)}
-                              className={`flex items-center gap-1 transition-colors hover:text-pink-400 ${comment.user_has_liked ? "text-pink-400" : ""}`}
+                              className={cn("flex items-center gap-1 transition-colors hover:text-pink-400", comment.user_has_liked ? "text-pink-400" : "")}
                             >
-                              <Heart className={`w-3 h-3 ${comment.user_has_liked ? "fill-pink-400" : ""}`} />
+                              <Heart className={cn("w-3.5 h-3.5", comment.user_has_liked ? "fill-pink-400" : "")} />
                               {comment.likes_count > 0 ? comment.likes_count : "Like"}
                             </button>
                             <button
@@ -353,24 +325,24 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
                       {/* Inline Reply Form */}
                       {isReplyingToThis && (
                         <form onSubmit={(e) => handleSubmitReply(e, comment.id)} className="flex items-center gap-2.5 pl-10">
-                          <Avatar className="w-6 h-6 shrink-0 border border-brand-500/20">
-                            <AvatarFallback className="bg-surface-700 text-[9px] text-brand-400">You</AvatarFallback>
+                          <Avatar className="w-7 h-7 shrink-0 border border-brand-500/20">
+                            <AvatarFallback className="bg-surface-800 text-[10px] text-brand-400">You</AvatarFallback>
                           </Avatar>
                           <div className="flex-1 relative">
                             <Input
                               value={replyText}
                               onChange={(e) => setReplyText(e.target.value)}
                               placeholder={`Reply to ${comment.author?.display_name}…`}
-                              className="bg-surface-900/60 border-surface-700/50 text-white placeholder:text-surface-500 rounded-full pl-3.5 pr-9 h-8 text-xs focus:border-brand-500/40 transition-all"
+                              className="bg-surface-800/60 border-white/10 text-white placeholder:text-surface-500 rounded-full px-3 pr-10 h-9 text-xs focus:border-brand-500/30 transition-all"
                               disabled={isSubmittingReply}
                               autoFocus
                             />
                             <button
                               type="submit"
                               disabled={!replyText.trim() || isSubmittingReply}
-                              className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full text-brand-400 flex items-center justify-center disabled:opacity-30"
+                              className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-brand-500 hover:bg-brand-400 text-surface-950 flex items-center justify-center transition-all disabled:opacity-40"
                             >
-                              <Send className="w-3 h-3" />
+                              <Send className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </form>
@@ -378,48 +350,34 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
 
                       {/* Replies */}
                       {replies.length > 0 && (
-                        <div className="pl-10 space-y-2.5 relative">
-                          <div className="absolute left-[18px] top-0 bottom-0 w-[1.5px] rounded-full"
-                            style={{ background: "linear-gradient(180deg, rgba(234,179,8,0.2) 0%, transparent 100%)" }} />
+                        <div className="pl-10 space-y-2.5">
                           {replies.map((reply: any) => (
                             <div key={reply.id} className="flex items-start gap-2.5">
                               <Link href={`/profile/${reply.author?.username}`} className="shrink-0 mt-0.5">
-                                <Avatar className="w-6 h-6 border border-surface-700 hover:border-brand-500/30 transition-colors">
+                                <Avatar className="w-7 h-7 border border-surface-700 hover:border-brand-500/20 transition-colors">
                                   <AvatarImage src={reply.author?.avatar_url || ""} />
-                                  <AvatarFallback className="bg-surface-700 text-[9px] text-brand-400 font-bold">
+                                  <AvatarFallback className="bg-surface-800 text-[10px] text-brand-400 font-bold">
                                     {getInitials(reply.author?.display_name)}
                                   </AvatarFallback>
                                 </Avatar>
                               </Link>
                               <div className="flex-1 space-y-1">
-                                <div
-                                  className="rounded-xl rounded-tl-sm px-3.5 py-2.5"
-                                  style={{
-                                    background: "rgba(255,255,255,0.03)",
-                                    border: "1px solid rgba(255,255,255,0.05)",
-                                  }}
-                                >
+                                <div className="bg-surface-800/30 rounded-xl rounded-tl-sm px-3 py-2">
                                   <div className="flex items-baseline gap-2 mb-1">
-                                    <Link href={`/profile/${reply.author?.username}`} className="text-[12px] font-bold text-white hover:text-brand-400 transition-colors">
+                                    <Link href={`/profile/${reply.author?.username}`} className="text-xs font-semibold text-white hover:text-brand-400 transition-colors">
                                       {reply.author?.display_name}
                                     </Link>
-                                    <span suppressHydrationWarning className="text-[10px] text-surface-500">{formatRelativeTime(reply.created_at)}</span>
+                                    <span suppressHydrationWarning className="text-[11px] text-surface-500">{formatRelativeTime(reply.created_at)}</span>
                                   </div>
-                                  <p className="text-[12.5px] text-white/75 leading-relaxed">{reply.content}</p>
+                                  <p className="text-xs text-white/80 leading-relaxed">{reply.content}</p>
                                 </div>
-                                <div className="flex items-center gap-3 pl-1.5 text-[10px] font-semibold text-surface-500">
+                                <div className="flex items-center gap-3 pl-1.5 text-[11px] font-semibold text-surface-500">
                                   <button
                                     onClick={() => handleCommentLike(reply.id)}
-                                    className={`flex items-center gap-1 transition-colors hover:text-pink-400 ${reply.user_has_liked ? "text-pink-400" : ""}`}
+                                    className={cn("flex items-center gap-1 transition-colors hover:text-pink-400", reply.user_has_liked ? "text-pink-400" : "")}
                                   >
-                                    <Heart className={`w-2.5 h-2.5 ${reply.user_has_liked ? "fill-pink-400" : ""}`} />
+                                    <Heart className={cn("w-3 h-3", reply.user_has_liked ? "fill-pink-400" : "")} />
                                     {reply.likes_count > 0 ? reply.likes_count : "Like"}
-                                  </button>
-                                  <button
-                                    onClick={() => { setReplyToCommentId(comment.id); setReplyText(`@${reply.author?.username} `) }}
-                                    className="hover:text-brand-400 transition-colors"
-                                  >
-                                    Reply
                                   </button>
                                 </div>
                               </div>
@@ -432,7 +390,7 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
                 })}
             </div>
           ) : (
-            <div className="text-center py-4">
+            <div className="text-center py-8">
               <p className="text-surface-500 text-sm">No comments yet — be the first to respond! 💬</p>
             </div>
           )}
