@@ -1,5 +1,7 @@
 "use client"
 
+import { Capacitor } from "@capacitor/core"
+
 // Convert base64 to ArrayBuffer for VAPID public key
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
@@ -9,6 +11,14 @@ function urlBase64ToUint8Array(base64String: string) {
 }
 
 export async function subscribeToPushNotifications() {
+  // If we're on a native platform (Android/iOS), native push notifications
+  // are already handled by useNativePushNotifications, so just return true!
+  if (Capacitor.isNativePlatform()) {
+    console.log("Native platform detected, native push notifications handled separately")
+    return true
+  }
+
+  // Web push notifications for browser
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
     console.log('Push notifications not supported')
     return false
