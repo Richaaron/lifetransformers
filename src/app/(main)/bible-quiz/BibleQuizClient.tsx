@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useIsNative } from '@/lib/hooks/use-is-native';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Trophy, BookOpen, ChevronRight } from 'lucide-react';
+import { Trophy, BookOpen, ChevronRight, Clock } from 'lucide-react';
 
 interface BibleQuiz {
   id: string;
@@ -41,10 +41,46 @@ export default function BibleQuizClient({ initialQuizzes, initialQuestions }: Bi
   const [totalQuestions, setTotalQuestions] = useState(0);
   const [showResults, setShowResults] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(15);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentQuiz = initialQuizzes.find((q) => q.id === currentQuizId);
   const currentQuestions = initialQuestions.filter((q) => q.quiz_id === currentQuizId);
   const currentQuestion = currentQuestions[currentQuestionIndex];
+
+  const clearTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  const startTimer = useCallback(() => {
+    clearTimer();
+    setTimeLeft(15);
+    timerRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearTimer();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, [clearTimer]);
+
+  useEffect(() => {
+    if (currentQuizId && !showResults && currentQuestion) {
+      startTimer();
+    }
+    return clearTimer;
+  }, [currentQuizId, currentQuestionIndex, showResults, currentQuestion, startTimer, clearTimer]);
+
+  useEffect(() => {
+    if (timeLeft === 0 && currentQuizId && !showResults && !loading) {
+      handleAnswer('__TIMEOUT__');
+    }
+  }, [timeLeft, currentQuizId, showResults, loading]);
 
   function startQuiz(quizId: string) {
     setCurrentQuizId(quizId);
@@ -52,11 +88,13 @@ export default function BibleQuizClient({ initialQuizzes, initialQuestions }: Bi
     setScore(0);
     setTotalQuestions(initialQuestions.filter((q) => q.quiz_id === quizId).length);
     setShowResults(false);
+    startTimer();
   }
 
   async function handleAnswer(selectedAnswer: string) {
     if (!currentQuestion) return;
 
+    clearTimer();
     setLoading(true);
 
     if (selectedAnswer === currentQuestion.correct_answer) {
@@ -166,6 +204,18 @@ export default function BibleQuizClient({ initialQuizzes, initialQuestions }: Bi
                 className="bg-gradient-to-r from-amber-500 to-orange-500 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${((currentQuestionIndex + 1) / currentQuestions.length) * 100}%` }}
               />
+            </div>
+          </div>
+
+          {/* Timer */}
+          <div className="flex items-center justify-center mb-6">
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${
+              timeLeft <= 5 ? 'bg-red-500/20 text-red-400 animate-pulse' :
+              timeLeft <= 10 ? 'bg-amber-500/20 text-amber-400' :
+              'bg-emerald-500/20 text-emerald-400'
+            }`}>
+              <Clock className="w-5 h-5" />
+              <span className="text-2xl font-bold tabular-nums">{timeLeft}s</span>
             </div>
           </div>
 

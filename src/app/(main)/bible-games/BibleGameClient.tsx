@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef, useCallback } from 'react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { useIsNative } from '@/lib/hooks/use-is-native'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { BookOpen, Trophy, Bookmark } from 'lucide-react'
+import { BookOpen, Trophy, Bookmark, Clock } from 'lucide-react'
 
 interface GameConfig {
   title: string
@@ -62,6 +62,8 @@ export default function BibleGameClient({ gameKey, config, challenges, items, ex
   const [towerScore, setTowerScore] = useState(0)
   const [beeAnswer, setBeeAnswer] = useState('')
   const [beeFeedback, setBeeFeedback] = useState<string | null>(null)
+  const [timeLeft, setTimeLeft] = useState(15)
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
 
   const currentChallenge = challenges.find((challenge) => challenge.id === currentChallengeId)
   const currentItems = useMemo(
@@ -85,6 +87,46 @@ export default function BibleGameClient({ gameKey, config, challenges, items, ex
     setShuffledBooks(shuffleArray(books))
     setShelfOrder([])
   }, [gameKey, currentChallengeId, items, config.itemKey])
+
+  const clearTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+      timerRef.current = null
+    }
+  }, [])
+
+  const startTimer = useCallback(() => {
+    clearTimer()
+    setTimeLeft(15)
+    timerRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearTimer()
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }, [clearTimer])
+
+  useEffect(() => {
+    if (currentChallengeId && !showResults) {
+      startTimer()
+    }
+    return clearTimer
+  }, [currentChallengeId, currentQuestionIndex, showResults, startTimer, clearTimer])
+
+  useEffect(() => {
+    if (timeLeft === 0 && currentChallengeId && !showResults && !loading) {
+      if (multipleChoiceGames.includes(gameKey)) {
+        handleAnswer('__TIMEOUT__')
+      } else if (gameKey === 'bible-bee') {
+        handleBeeSubmit()
+      } else if (gameKey === 'bible-trivia-tower') {
+        handleTowerAnswer('__TIMEOUT__')
+      }
+    }
+  }, [timeLeft, currentChallengeId, showResults, loading, gameKey])
 
   const activeChallengeIndex = useMemo(
     () => challenges.findIndex((challenge) => challenge.id === currentChallengeId),
@@ -117,6 +159,7 @@ export default function BibleGameClient({ gameKey, config, challenges, items, ex
     setTowerScore(0)
     setBeeAnswer('')
     setBeeFeedback(null)
+    startTimer()
   }
 
   function getShuffledAnswers(question: any) {
@@ -261,6 +304,7 @@ export default function BibleGameClient({ gameKey, config, challenges, items, ex
 
   async function handleAnswer(selectedAnswer: string) {
     if (!currentQuestion) return
+    clearTimer()
     setLoading(true)
 
     const correct = getCorrectAnswer(currentQuestion)
@@ -346,12 +390,24 @@ export default function BibleGameClient({ gameKey, config, challenges, items, ex
   }
 
   if (multipleChoiceGames.includes(gameKey)) {
-    return (
+      return (
       <div className={isNative ? 'p-4' : 'max-w-3xl mx-auto p-6'}>
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-white mb-2">{currentChallenge?.title}</h1>
           <p className="text-surface-400">{currentChallenge?.description || config.description}</p>
           <p className="text-sm text-surface-500 mt-2">Question {currentQuestionIndex + 1} of {currentItems.length}</p>
+        </div>
+
+        {/* Timer */}
+        <div className="flex items-center justify-center mb-6">
+          <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${
+            timeLeft <= 5 ? 'bg-red-500/20 text-red-400 animate-pulse' :
+            timeLeft <= 10 ? 'bg-amber-500/20 text-amber-400' :
+            'bg-emerald-500/20 text-emerald-400'
+          }`}>
+            <Clock className="w-5 h-5" />
+            <span className="text-2xl font-bold tabular-nums">{timeLeft}s</span>
+          </div>
         </div>
 
         <Card className="p-6 mb-6">
@@ -389,6 +445,18 @@ export default function BibleGameClient({ gameKey, config, challenges, items, ex
           <h1 className="text-3xl font-bold text-white mb-2">{currentChallenge?.title}</h1>
           <p className="text-surface-400">{currentChallenge?.description || config.description}</p>
           <p className="text-sm text-surface-500 mt-2">Verse {currentQuestionIndex + 1} of {currentItems.length}</p>
+        </div>
+
+        {/* Timer */}
+        <div className="flex items-center justify-center mb-6">
+          <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${
+            timeLeft <= 5 ? 'bg-red-500/20 text-red-400 animate-pulse' :
+            timeLeft <= 10 ? 'bg-amber-500/20 text-amber-400' :
+            'bg-emerald-500/20 text-emerald-400'
+          }`}>
+            <Clock className="w-5 h-5" />
+            <span className="text-2xl font-bold tabular-nums">{timeLeft}s</span>
+          </div>
         </div>
 
         <Card className="p-6 mb-6">
@@ -509,6 +577,7 @@ export default function BibleGameClient({ gameKey, config, challenges, items, ex
 
     async function handleTowerAnswer(answer: string) {
       if (!currentQuestion) return
+      clearTimer()
       setLoading(true)
       const correct = normalizeText(currentQuestion.correct_answer)
       if (normalizeText(answer) === correct) {
@@ -538,6 +607,18 @@ export default function BibleGameClient({ gameKey, config, challenges, items, ex
           <h1 className="text-3xl font-bold text-white mb-2">{currentChallenge?.title}</h1>
           <p className="text-surface-400">{currentChallenge?.description || config.description}</p>
           <p className="text-sm text-surface-500 mt-2">Floor {currentTowerFloor?.floor_number} / {currentItems.length}</p>
+        </div>
+
+        {/* Timer */}
+        <div className="flex items-center justify-center mb-6">
+          <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${
+            timeLeft <= 5 ? 'bg-red-500/20 text-red-400 animate-pulse' :
+            timeLeft <= 10 ? 'bg-amber-500/20 text-amber-400' :
+            'bg-emerald-500/20 text-emerald-400'
+          }`}>
+            <Clock className="w-5 h-5" />
+            <span className="text-2xl font-bold tabular-nums">{timeLeft}s</span>
+          </div>
         </div>
 
         <Card className="p-6 mb-6">
@@ -581,13 +662,14 @@ export default function BibleGameClient({ gameKey, config, challenges, items, ex
 
     async function handleBeeSubmit() {
       if (!currentWord) return
+      clearTimer()
       setLoading(true)
       const correct = normalizeText(currentWord.word)
       if (normalizeText(beeAnswer) === correct) {
         setScore((prev) => prev + 1)
         setBeeFeedback('Correct!')
       } else {
-        setBeeFeedback(`Not quite — the word is “${currentWord.word}”.`)
+        setBeeFeedback(`Not quite — the word is "${currentWord.word}".`)
       }
 
       if (currentQuestionIndex < currentItems.length - 1) {
@@ -607,6 +689,18 @@ export default function BibleGameClient({ gameKey, config, challenges, items, ex
           <h1 className="text-3xl font-bold text-white mb-2">{currentChallenge?.title}</h1>
           <p className="text-surface-400">{currentChallenge?.description || config.description}</p>
           <p className="text-sm text-surface-500 mt-2">Hint: {currentWord?.hint}</p>
+        </div>
+
+        {/* Timer */}
+        <div className="flex items-center justify-center mb-6">
+          <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${
+            timeLeft <= 5 ? 'bg-red-500/20 text-red-400 animate-pulse' :
+            timeLeft <= 10 ? 'bg-amber-500/20 text-amber-400' :
+            'bg-emerald-500/20 text-emerald-400'
+          }`}>
+            <Clock className="w-5 h-5" />
+            <span className="text-2xl font-bold tabular-nums">{timeLeft}s</span>
+          </div>
         </div>
 
         <Card className="p-6 mb-6">
