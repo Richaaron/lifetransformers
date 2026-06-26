@@ -63,3 +63,7 @@ __pycache__
 # Generated PWA files
 public/sw.js
 public/worker-*.js
+
+# Capacitor
+android/
+ios/
