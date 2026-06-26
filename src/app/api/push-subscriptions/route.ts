@@ -4,7 +4,7 @@ import { NextResponse } from "next/server"
 
 export async function POST(request: Request) {
   try {
-    const { subscription } = await request.json()
+    const body = await request.json()
     const cookieStore = await cookies()
     const deviceToken = cookieStore.get("device_token")?.value
     const supabase = await createClient()
@@ -14,12 +14,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Update the user's device with the push subscription
-    await supabase
-      .from("user_devices")
-      .update({ push_subscription: subscription })
-      .eq("device_token", deviceToken)
-      .eq("user_id", user.id)
+    // Handle both web push subscription and FCM token
+    if (body.subscription) {
+      // Web push subscription
+      await supabase
+        .from("user_devices")
+        .update({ push_subscription: body.subscription })
+        .eq("device_token", deviceToken)
+        .eq("user_id", user.id)
+    } else if (body.token && body.platform) {
+      // FCM token (native mobile)
+      await supabase
+        .from("user_devices")
+        .update({ fcm_token: body.token })
+        .eq("device_token", deviceToken)
+        .eq("user_id", user.id)
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {

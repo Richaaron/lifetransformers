@@ -5,6 +5,7 @@ import { NotificationProvider } from "@/components/providers/NotificationProvide
 import { ChatProvider } from "@/components/providers/ChatProvider"
 import { PresenceProvider } from "@/components/providers/PresenceProvider"
 import ReactQueryProvider from "./ReactQueryProvider"
+import ClientProviders from "./ClientProviders"
 
 export default async function Providers({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies()
@@ -31,20 +32,22 @@ export default async function Providers({ children }: { children: React.ReactNod
 
   return (
     <ReactQueryProvider>
-      <PresenceProvider currentUserId={user?.id || null}>
-        <NotificationProvider currentUserId={user?.id || null}>
-          <ChatProvider>
-            {children}
-          </ChatProvider>
-          <Toaster 
-            position="top-right" 
-            toastOptions={{
-              className: "glass-strong border border-surface-700/50 text-white rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)]",
-              duration: 5000,
-            }}
-          />
-        </NotificationProvider>
-      </PresenceProvider>
+      <ClientProviders>
+        <PresenceProvider currentUserId={user?.id || null}>
+          <NotificationProvider currentUserId={user?.id || null}>
+            <ChatProvider>
+              {children}
+            </ChatProvider>
+            <Toaster 
+              position="top-right" 
+              toastOptions={{
+                className: "glass-strong border border-surface-700/50 text-white rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.5)]",
+                duration: 5000,
+              }}
+            />
+          </NotificationProvider>
+        </PresenceProvider>
+      </ClientProviders>
     </ReactQueryProvider>
   )
 }

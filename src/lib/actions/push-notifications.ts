@@ -1,51 +1,97 @@
 "use server"
 
-import webpush from 'web-push'
-import { createClient } from '@/lib/supabase/server'
+import webpush from "web-push"
+import admin from "firebase-admin"
+import { createClient } from "@/lib/supabase/server"
+
+// Initialize Firebase Admin if not already initialized
+if (!admin.apps.length) {
+  // Use FIREBASE_SERVICE_ACCOUNT_KEY environment variable (should be JSON string)
+  const serviceAccount = JSON.parse(
+    process.env.FIREBASE_SERVICE_ACCOUNT_KEY || "{}"
+  )
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+  })
+}
 
 const vapidKeys = {
   publicKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  privateKey: process.env.VAPID_PRIVATE_KEY!
+  privateKey: process.env.VAPID_PRIVATE_KEY!,
 }
 
 webpush.setVapidDetails(
-  'mailto:support@lifetransformers.org',
+  "mailto:support@lifetransformers.org",
   vapidKeys.publicKey,
   vapidKeys.privateKey
 )
 
-export async function sendPushNotification(userId: string, title: string, body: string, url: string = '/') {
+export async function sendPushNotification(
+  userId: string,
+  title: string,
+  body: string,
+  url: string = "/"
+) {
   const supabase = await createClient()
-  
-  // Get all push subscriptions for this user
+
+  // Get all push subscriptions and FCM tokens for this user
   const { data: userDevices } = await supabase
-    .from('user_devices')
-    .select('push_subscription, id')
-    .eq('user_id', userId)
-    .not('push_subscription', 'is', null)
+    .from("user_devices")
+    .select("push_subscription, fcm_token")
+    .eq("user_id", userId)
+    .or("push_subscription.is.not.null,fcm_token.is.not.null")
 
   if (!userDevices || userDevices.length === 0) {
     return
   }
 
-  const payload = JSON.stringify({
+  const webPushPayload = JSON.stringify({
     title,
     body,
-    url
+    url,
   })
 
-  // Send push notifications to all subscriptions
+  // Send notifications to all devices
   const promises = userDevices.map(async (device) => {
-    try {
-      await webpush.sendNotification(device.push_subscription, payload)
-    } catch (error) {
-      console.error('Error sending push notification:', error)
-      // If subscription is invalid, remove it
-      if (error && typeof error === 'object' && 'statusCode' in error && error.statusCode === 410) {
-        await supabase
-          .from('user_devices')
-          .update({ push_subscription: null })
-          .eq('id', device.id)
+    // Send web push notification if subscription exists
+    if (device.push_subscription) {
+      try {
+        await webpush.sendNotification(device.push_subscription, webPushPayload)
+      } catch (error) {
+        console.error("Error sending web push notification:", error)
+        if (
+          error &&
+          typeof error === "object" &&
+          "statusCode" in error &&
+          error.statusCode === 410
+        ) {
+          await supabase
+            .from("user_devices")
+            .update({ push_subscription: null })
+            .eq("id", device.id)
+        }
+      }
+    }
+
+    // Send FCM notification if token exists
+    if (device.fcm_token) {
+      try {
+        await admin.messaging().send({
+          token: device.fcm_token,
+          notification: {
+            title,
+            body,
+          },
+          android: {
+            priority: "high",
+            notification: {
+              channelId: "default",
+              clickAction: "FLUTTER_NOTIFICATION_CLICK",
+            },
+          },
+        })
+      } catch (error) {
+        console.error("Error sending FCM notification:", error)
       }
     }
   })
