@@ -1,20 +1,21 @@
 "use server"
 
 import webpush from "web-push"
-import admin from "firebase-admin"
 import { createClient } from "@/lib/supabase/server"
 
-// Initialize Firebase Admin lazily
+// Initialize Firebase Admin lazily with dynamic import
 let firebaseApp: any = null
 
-const getFirebaseApp = () => {
+const getFirebaseApp = async () => {
   if (firebaseApp) {
     return firebaseApp
   }
   if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
     try {
+      const admin = (await import("firebase-admin")).default
       const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
       firebaseApp = admin.initializeApp({
+        // @ts-ignore - TypeScript might not recognize credential in dynamic import
         credential: admin.credential.cert(serviceAccount),
       })
       return firebaseApp
@@ -63,7 +64,7 @@ export async function sendPushNotification(
   })
 
   // Get Firebase app for FCM
-  const firebaseApp = getFirebaseApp()
+  const firebaseApp = await getFirebaseApp()
 
   // Send notifications to all devices
   const promises = userDevices.map(async (device) => {
