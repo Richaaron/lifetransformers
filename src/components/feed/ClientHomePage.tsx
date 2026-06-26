@@ -1,9 +1,9 @@
 "use client"
 
 import { Capacitor } from "@capacitor/core"
-import PostComposer from "./PostComposer"
-import InfiniteFeed from "./InfiniteFeed"
-import FeedSkeleton from "./LoadingSkeleton"
+import { PostComposer } from "./PostComposer"
+import { InfiniteFeed } from "./InfiniteFeed"
+import { FeedSkeleton } from "./LoadingSkeleton"
 import Image from "next/image"
 import { Suspense } from "react"
 
