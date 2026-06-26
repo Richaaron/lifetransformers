@@ -280,3 +280,101 @@ INSERT INTO notifications (id, user_id, type, actor_id, resource_id, resource_ty
 
   -- Notification to Pastor Tim for John replying to his comment
   (gen_random_uuid(), '00000000-0000-0000-0000-000000000001', 'comment_reply', '00000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', 'post', false, now() - interval '8 days');
+
+
+-- ── 12. INSERT BIBLE QUIZZES ─────────────────────────────────────────────────
+INSERT INTO bible_quizzes (id, title, description, difficulty, xp_reward) VALUES
+  ('10000000-0000-0000-0000-000000000001', 'New Testament Basics', 'Test your knowledge of foundational New Testament stories and teachings.', 'easy', 15),
+  ('10000000-0000-0000-0000-000000000002', 'Old Testament Heroes', 'Learn about the great men and women of faith in the Old Testament.', 'medium', 25),
+  ('10000000-0000-0000-0000-000000000003', 'Psalms & Wisdom', 'Explore the wisdom literature and prayers of the Bible.', 'medium', 25),
+  ('10000000-0000-0000-0000-000000000004', 'Gospels Challenge', 'Deep dive into the life and ministry of Jesus Christ.', 'hard', 40);
+
+-- Insert Bible quiz questions
+INSERT INTO bible_quiz_questions (id, quiz_id, question, correct_answer, wrong_answers, reference, order_index) VALUES
+  -- New Testament Basics
+  (gen_random_uuid(), '10000000-0000-0000-0000-000000000001', 'Who was the first person to see Jesus after His resurrection?', 'Mary Magdalene', ARRAY['Peter', 'John', 'The disciples'], 'John 20:11-18', 0),
+  (gen_random_uuid(), '10000000-0000-0000-0000-000000000001', 'What is the first book of the New Testament?', 'Matthew', ARRAY['Mark', 'Luke', 'John'], 'Matthew 1:1', 1),
+  (gen_random_uuid(), '10000000-0000-0000-0000-000000000001', 'How many apostles did Jesus choose?', '12', ARRAY['10', '13', '7'], 'Luke 6:13-16', 2),
+  (gen_random_uuid(), '10000000-0000-0000-0000-000000000001', 'Where was Jesus born?', 'Bethlehem', ARRAY['Nazareth', 'Jerusalem', 'Egypt'], 'Matthew 2:1', 3),
+  (gen_random_uuid(), '10000000-0000-0000-0000-000000000001', 'Who wrote the most letters in the New Testament?', 'Paul', ARRAY['Peter', 'John', 'James'], '2 Timothy 4:11', 4),
+  -- Old Testament Heroes
+  (gen_random_uuid(), '10000000-0000-0000-0000-000000000002', 'Who was sold into slavery by his brothers?', 'Joseph', ARRAY['Moses', 'David', 'Solomon'], 'Genesis 37:28', 0),
+  (gen_random_uuid(), '10000000-0000-0000-0000-000000000002', 'Who led the Israelites out of Egypt?', 'Moses', ARRAY['Joshua', 'Aaron', 'Samuel'], 'Exodus 14:21', 1),
+  (gen_random_uuid(), '10000000-0000-0000-0000-000000000002', 'How many days did it rain during Noah''s flood?', '40', ARRAY['20', '365', '100'], 'Genesis 7:12', 2),
+  (gen_random_uuid(), '10000000-0000-0000-0000-000000000002', 'Who killed Goliath?', 'David', ARRAY['Saul', 'Jonathan', 'Samuel'], '1 Samuel 17:50', 3),
+  (gen_random_uuid(), '10000000-0000-0000-0000-000000000002', 'What was Samson''s source of strength?', 'His hair', ARRAY['His sword', 'His shield', 'His prayer', 'His family'], 'Judges 16:17', 4),
+  -- Psalms & Wisdom
+  (gen_random_uuid(), '10000000-0000-0000-0000-000000000003', 'The Lord is my shepherd; I shall not want.', 'Psalm 23', ARRAY['Psalm 1', 'Psalm 100', 'Psalm 150'], 'Psalm 23:1', 0),
+  (gen_random_uuid(), '10000000-0000-0000-0000-000000000003', 'Which book says, "Trust in the Lord with all your heart"?', 'Proverbs', ARRAY['Psalms', 'Ecclesiastes', 'Song of Solomon'], 'Proverbs 3:5', 1),
+  (gen_random_uuid(), '10000000-0000-0000-0000-000000000003', 'Who was known for his wisdom?', 'Solomon', ARRAY['David', 'Moses', 'Abraham'], '1 Kings 3:9', 2),
+  (gen_random_uuid(), '10000000-0000-0000-0000-000000000003', 'How many Psalms are in the book of Psalms?', '150', ARRAY['100', '119', '175'], 'Psalm 150', 3),
+  (gen_random_uuid(), '10000000-0000-0000-0000-000000000003', 'Who wrote most of the Psalms?', 'David', ARRAY['Solomon', 'Moses', 'Asaph'], 'Psalm 3:1', 4),
+  -- Gospels Challenge
+  (gen_random_uuid(), '10000000-0000-0000-0000-000000000004', 'What was Jesus'' first miracle?', 'Turning water to wine', ARRAY['Healing the blind', 'Feeding 5000', 'Walking on water'], 'John 2:1-11', 0),
+  (gen_random_uuid(), '10000000-0000-0000-0000-000000000004', 'Who denied Jesus three times?', 'Peter', ARRAY['Judas', 'Thomas', 'John'], 'Matthew 26:69-75', 1),
+  (gen_random_uuid(), '10000000-0000-0000-0000-000000000004', 'What is the last book of the New Testament?', 'Revelation', ARRAY['1 Peter', '1 John', 'Acts'], 'Revelation 1:1', 2),
+  (gen_random_uuid(), '10000000-0000-0000-0000-000000000004', 'How many loaves of bread did Jesus use to feed 5000?', '5', ARRAY['2', '7', '10'], 'Matthew 14:19', 3),
+  (gen_random_uuid(), '10000000-0000-0000-0000-000000000004', 'Who was the tax collector that climbed a tree to see Jesus?', 'Zacchaeus', ARRAY['Matthew', 'Levi', 'Peter'], 'Luke 19:1-10', 4);
+
+-- ── 13. INSERT BIBLE GAME CHALLENGES ─────────────────────────────────────────
+INSERT INTO verse_memory_challenges (id, title, description, difficulty, xp_reward) VALUES
+  (gen_random_uuid(), 'Scripture Memory Sprint', 'Fill in the missing words from key Bible verses.', 'easy', 20);
+
+INSERT INTO verse_memory_questions (id, challenge_id, verse_text, reference, missing_words, order_index) VALUES
+  (gen_random_uuid(), (SELECT id FROM verse_memory_challenges LIMIT 1), 'The LORD is my shepherd; I shall not want.', 'Psalm 23:1', ARRAY['LORD', 'shepherd', 'want'], 0),
+  (gen_random_uuid(), (SELECT id FROM verse_memory_challenges LIMIT 1), 'Trust in the LORD with all your heart and lean not on your own understanding.', 'Proverbs 3:5', ARRAY['Trust', 'heart', 'understanding'], 1);
+
+INSERT INTO who_said_it_quizzes (id, title, description, difficulty, xp_reward) VALUES
+  (gen_random_uuid(), 'Who Said It? Gospel Edition', 'Match Bible quotes to the speaker in the Gospels.', 'medium', 25);
+
+INSERT INTO who_said_it_questions (id, quiz_id, quote, correct_speaker, wrong_speakers, reference, order_index) VALUES
+  (gen_random_uuid(), (SELECT id FROM who_said_it_quizzes LIMIT 1), 'Father, forgive them, for they know not what they do.', 'Jesus', ARRAY['Peter', 'Pilate', 'John'], 'Luke 23:34', 0),
+  (gen_random_uuid(), (SELECT id FROM who_said_it_quizzes LIMIT 1), 'I am the way, and the truth, and the life.', 'Jesus', ARRAY['Paul', 'Peter', 'Moses'], 'John 14:6', 1);
+
+INSERT INTO bookshelf_challenges (id, title, section, xp_reward) VALUES
+  (gen_random_uuid(), 'Bible Bookshelf Basics', 'both', 20);
+
+INSERT INTO bookshelf_books (id, challenge_id, book_name, correct_order) VALUES
+  (gen_random_uuid(), (SELECT id FROM bookshelf_challenges LIMIT 1), 'Genesis', 1),
+  (gen_random_uuid(), (SELECT id FROM bookshelf_challenges LIMIT 1), 'Matthew', 40),
+  (gen_random_uuid(), (SELECT id FROM bookshelf_challenges LIMIT 1), 'Revelation', 66);
+
+INSERT INTO story_quizzes (id, title, description, difficulty, xp_reward) VALUES
+  (gen_random_uuid(), 'Name That Bible Story', 'Identify the story from short descriptions.', 'easy', 20);
+
+INSERT INTO story_questions (id, quiz_id, emoji_clue, description, correct_story, wrong_stories, reference, order_index) VALUES
+  (gen_random_uuid(), (SELECT id FROM story_quizzes LIMIT 1), '🕊️🔥', 'The Holy Spirit came down in tongues of fire while believers were gathered together.', 'Pentecost', ARRAY['Ascension', 'Transfiguration', 'Baptism'], 'Acts 2:1-4', 0),
+  (gen_random_uuid(), (SELECT id FROM story_quizzes LIMIT 1), '🐂⚡', 'A prophet called fire down from heaven to show God is the true Lord.', 'Elijah on Mount Carmel', ARRAY['Elijah fed by ravens', 'Moses parting the sea', 'Daniel in the lions'' den'], '1 Kings 18:38', 1);
+
+INSERT INTO trivia_towers (id, title, xp_reward_per_floor, total_floors) VALUES
+  (gen_random_uuid(), 'Bible Trivia Tower', 10, 3);
+
+INSERT INTO trivia_floors (id, tower_id, floor_number, floor_title, difficulty, xp_bonus) VALUES
+  (gen_random_uuid(), (SELECT id FROM trivia_towers LIMIT 1), 1, 'Foundational Faith', 'easy', 5),
+  (gen_random_uuid(), (SELECT id FROM trivia_towers LIMIT 1), 2, 'Prophets & Promises', 'medium', 10),
+  (gen_random_uuid(), (SELECT id FROM trivia_towers LIMIT 1), 3, 'Kingdom Challenges', 'hard', 15);
+
+INSERT INTO trivia_floor_questions (id, floor_id, question, correct_answer, wrong_answers, reference, order_index) VALUES
+  (gen_random_uuid(), (SELECT id FROM trivia_floors ORDER BY floor_number LIMIT 1), 'What city did Jonah run away to before being swallowed by a great fish?', 'Nineveh', ARRAY['Jerusalem', 'Babylon', 'Capernaum'], 'Jonah 1:2-3', 0),
+  (gen_random_uuid(), (SELECT id FROM trivia_floors ORDER BY floor_number LIMIT 1), 'Who led the Israelites into the Promised Land after Moses?', 'Joshua', ARRAY['Caleb', 'Aaron', 'Gideon'], 'Joshua 1:1-2', 1);
+
+INSERT INTO bible_bee_challenges (id, title, difficulty, xp_reward_per_word) VALUES
+  (gen_random_uuid(), 'Bible Bee Buzz', 'easy', 10);
+
+INSERT INTO bible_bee_words (id, challenge_id, word, hint, order_index) VALUES
+  (gen_random_uuid(), (SELECT id FROM bible_bee_challenges LIMIT 1), 'Disciple', 'One who follows and learns from Jesus.', 0),
+  (gen_random_uuid(), (SELECT id FROM bible_bee_challenges LIMIT 1), 'Apostle', 'Sent one who spreads the gospel message.', 1);
+
+INSERT INTO family_tree_challenges (id, title, xp_reward_per_connection) VALUES
+  (gen_random_uuid(), 'Family Tree Builder', 5);
+
+INSERT INTO family_tree_connections (id, challenge_id, character1, relationship, character2, wrong_character2, reference, order_index) VALUES
+  (gen_random_uuid(), (SELECT id FROM family_tree_challenges LIMIT 1), 'Abraham', 'father', 'Isaac', ARRAY['Jacob', 'Esau', 'Noah'], 'Genesis 21:3', 0),
+  (gen_random_uuid(), (SELECT id FROM family_tree_challenges LIMIT 1), 'David', 'father', 'Solomon', ARRAY['Jonathan', 'Nathan', 'Samuel'], '1 Kings 1:11', 1);
+
+INSERT INTO promise_match_challenges (id, title, description, difficulty, xp_reward_per_match) VALUES
+  (gen_random_uuid(), 'Bible Promise Match', 'Pair promises with their Scripture references.', 'medium', 10);
+
+INSERT INTO promise_match_pairs (id, challenge_id, promise_text, correct_reference, wrong_references, order_index) VALUES
+  (gen_random_uuid(), (SELECT id FROM promise_match_challenges LIMIT 1), 'The Lord is my shepherd; I shall not want.', 'Psalm 23:1', ARRAY['Psalm 1:1', 'John 3:16', 'Romans 8:28'], 0),
+  (gen_random_uuid(), (SELECT id FROM promise_match_challenges LIMIT 1), 'I can do all things through him who strengthens me.', 'Philippians 4:13', ARRAY['Hebrews 11:1', 'Matthew 11:28', 'Psalm 46:1'], 1);

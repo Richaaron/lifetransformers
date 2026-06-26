@@ -243,3 +243,261 @@ export function getXpProgress(currentXp: number, currentLevel: number): number {
   if (nextLevelXp === currentLevelXp) return 100
   return Math.min(100, Math.round(((currentXp - currentLevelXp) / (nextLevelXp - currentLevelXp)) * 100))
 }
+
+export interface BibleQuiz {
+  id: string;
+  title: string;
+  description: string | null;
+  difficulty: 'easy' | 'medium' | 'hard';
+  xp_reward: number;
+  created_at: string;
+}
+
+export interface BibleQuizQuestion {
+  id: string;
+  quiz_id: string;
+  question: string;
+  correct_answer: string;
+  wrong_answers: string[];
+  reference: string | null;
+  order_index: number;
+}
+
+export interface UserQuizAttempt {
+  id: string;
+  user_id: string;
+  quiz_id: string;
+  score: number;
+  total_questions: number;
+  completed_at: string;
+}
+
+// ─── BIBLE GAMES TYPES ────────────────────────────────────────────────────────
+
+// 1. BIBLE VERSE MEMORY CHALLENGE
+export interface VerseMemoryChallenge {
+  id: string;
+  title: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  xp_reward: number;
+  created_at: string;
+}
+
+export interface VerseMemoryQuestion {
+  id: string;
+  challenge_id: string;
+  verse_text: string;
+  reference: string;
+  missing_words: string[];
+  order_index: number;
+}
+
+export interface VerseMemoryAttempt {
+  id: string;
+  user_id: string;
+  challenge_id: string;
+  score: number;
+  total_questions: number;
+  completed_at: string;
+}
+
+// 2. WHO SAID IT? QUIZ
+export interface WhoSaidItQuiz {
+  id: string;
+  title: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  xp_reward: number;
+  created_at: string;
+}
+
+export interface WhoSaidItQuestion {
+  id: string;
+  quiz_id: string;
+  quote: string;
+  correct_speaker: string;
+  wrong_speakers: string[];
+  reference: string;
+  order_index: number;
+}
+
+export interface WhoSaidItAttempt {
+  id: string;
+  user_id: string;
+  quiz_id: string;
+  score: number;
+  total_questions: number;
+  completed_at: string;
+}
+
+// 3. BIBLE BOOKSHELF
+export interface BookshelfChallenge {
+  id: string;
+  title: string;
+  section: 'old_testament' | 'new_testament' | 'both';
+  xp_reward: number;
+  created_at: string;
+}
+
+export interface BookshelfBook {
+  id: string;
+  challenge_id: string;
+  book_name: string;
+  correct_order: number;
+}
+
+export interface BookshelfAttempt {
+  id: string;
+  user_id: string;
+  challenge_id: string;
+  score: number;
+  total_books: number;
+  completed_at: string;
+}
+
+// 4. NAME THAT BIBLE STORY
+export interface StoryQuiz {
+  id: string;
+  title: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  xp_reward: number;
+  created_at: string;
+}
+
+export interface StoryQuestion {
+  id: string;
+  quiz_id: string;
+  emoji_clue?: string;
+  description: string;
+  correct_story: string;
+  wrong_stories: string[];
+  reference: string;
+  order_index: number;
+}
+
+export interface StoryAttempt {
+  id: string;
+  user_id: string;
+  quiz_id: string;
+  score: number;
+  total_questions: number;
+  completed_at: string;
+}
+
+// 5. BIBLE TRIVIA TOWER
+export interface TriviaTower {
+  id: string;
+  title: string;
+  xp_reward_per_floor: number;
+  total_floors: number;
+  created_at: string;
+}
+
+export interface TriviaFloor {
+  id: string;
+  tower_id: string;
+  floor_number: number;
+  floor_title: string;
+  difficulty: 'easy' | 'medium' | 'hard' | 'expert' | 'master';
+  xp_bonus: number;
+}
+
+export interface TriviaFloorQuestion {
+  id: string;
+  floor_id: string;
+  question: string;
+  correct_answer: string;
+  wrong_answers: string[];
+  reference?: string;
+  order_index: number;
+}
+
+export interface TriviaTowerAttempt {
+  id: string;
+  user_id: string;
+  tower_id: string;
+  highest_floor_reached: number;
+  total_questions_answered: number;
+  total_xp_earned: number;
+  completed_at: string;
+}
+
+// 6. BIBLE BEE
+export interface BibleBeeChallenge {
+  id: string;
+  title: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  xp_reward_per_word: number;
+  created_at: string;
+}
+
+export interface BibleBeeWord {
+  id: string;
+  challenge_id: string;
+  word: string;
+  hint: string;
+  order_index: number;
+}
+
+export interface BibleBeeAttempt {
+  id: string;
+  user_id: string;
+  challenge_id: string;
+  score: number;
+  total_words: number;
+  completed_at: string;
+}
+
+// 7. FAMILY TREE BUILDER
+export interface FamilyTreeChallenge {
+  id: string;
+  title: string;
+  xp_reward_per_connection: number;
+  created_at: string;
+}
+
+export interface FamilyTreeConnection {
+  id: string;
+  challenge_id: string;
+  character1: string;
+  relationship: string;
+  character2: string;
+  wrong_character2: string[];
+  reference: string;
+  order_index: number;
+}
+
+export interface FamilyTreeAttempt {
+  id: string;
+  user_id: string;
+  challenge_id: string;
+  score: number;
+  total_connections: number;
+  completed_at: string;
+}
+
+// 8. BIBLE PROMISE MATCH
+export interface PromiseMatchChallenge {
+  id: string;
+  title: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  xp_reward_per_match: number;
+  created_at: string;
+}
+
+export interface PromiseMatchPair {
+  id: string;
+  challenge_id: string;
+  promise_text: string;
+  correct_reference: string;
+  wrong_references: string[];
+  order_index: number;
+}
+
+export interface PromiseMatchAttempt {
+  id: string;
+  user_id: string;
+  challenge_id: string;
+  score: number;
+  total_pairs: number;
+  completed_at: string;
+}

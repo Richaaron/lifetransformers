@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Home, Users, MessageSquare, Bell, Search, Settings, LogOut, Trophy, User, Zap } from "lucide-react"
+import { Home, Users, MessageSquare, Bell, Search, Settings, LogOut, Trophy, User, Zap, BookOpen } from "lucide-react"
 import { logoutAction } from "@/lib/actions/auth"
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
@@ -16,6 +16,8 @@ import { ThemeToggle } from "@/components/theme/ThemeToggle"
 
 const navItems = [
   { name: "Home",          href: "/home",          icon: Home },
+  { name: "Bible Games",   href: "/bible-games",   icon: BookOpen },
+  { name: "Bible Quiz",    href: "/bible-quiz",    icon: BookOpen },
   { name: "Friends",       href: "/friends",       icon: Users },
   { name: "Messages",      href: "/messages",      icon: MessageSquare },
   { name: "Groups",        href: "/groups",        icon: Users },
