@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "deploy": "npm run build && npx netlify deploy --prod",
+    "deploy:preview": "npm run build && npx netlify deploy"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.1",
