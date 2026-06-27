@@ -75,6 +75,7 @@ export default function BibleGameClient({ gameKey, config, challenges, items, ex
   const [beeFeedback, setBeeFeedback] = useState<string | null>(null)
   const [timeLeft, setTimeLeft] = useState(15)
   const [timedOut, setTimedOut] = useState(false)
+  const [questionAnswerOrder, setQuestionAnswerOrder] = useState<Record<string, string[]>>({})
   const timerRef = useRef<NodeJS.Timeout | null>(null)
 
   const currentChallenge = challenges.find((challenge) => challenge.id === currentChallengeId)
@@ -112,9 +113,19 @@ export default function BibleGameClient({ gameKey, config, challenges, items, ex
     return `${gameKey}:${currentChallengeId ?? 'none'}:${gameKey === 'bible-trivia-tower' ? towerFloorIndex : currentQuestionIndex}:${identity}`
   }, [activeQuestionForAnswers, currentChallengeId, currentQuestionIndex, gameKey, towerFloorIndex])
 
-  const currentQuestionAnswers = useMemo(() => {
-    return buildQuestionAnswers(activeQuestionForAnswers)
-  }, [activeQuestionAnswerKey])
+  useEffect(() => {
+    if (!activeQuestionForAnswers || !activeQuestionAnswerKey) return
+
+    setQuestionAnswerOrder((prev) => {
+      if (prev[activeQuestionAnswerKey]) return prev
+      return {
+        ...prev,
+        [activeQuestionAnswerKey]: buildQuestionAnswers(activeQuestionForAnswers),
+      }
+    })
+  }, [activeQuestionAnswerKey, activeQuestionForAnswers])
+
+  const currentQuestionAnswers = questionAnswerOrder[activeQuestionAnswerKey] ?? []
 
   useEffect(() => {
     if (gameKey !== 'bible-bookshelf' || !currentChallengeId) return
@@ -256,6 +267,7 @@ export default function BibleGameClient({ gameKey, config, challenges, items, ex
     setTowerScore(0)
     setBeeAnswer('')
     setBeeFeedback(null)
+    setQuestionAnswerOrder({})
     startTimer()
   }
 
