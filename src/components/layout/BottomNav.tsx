@@ -51,6 +51,9 @@ export function BottomNav() {
               prefetch={true}
               onClick={() => {
                 if (tab.href === "/bible-games" || tab.href === "/bible-quiz") {
+                  if (typeof window !== "undefined") {
+                    window.localStorage.setItem("lt-last-feature-route", JSON.stringify({ name: tab.name, href: tab.href }))
+                  }
                   playGameLaunchSound()
                   void vibrateLight()
                 }

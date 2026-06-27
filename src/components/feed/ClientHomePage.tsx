@@ -6,7 +6,7 @@ import { InfiniteFeed } from "./InfiniteFeed"
 import { FeedSkeleton } from "./LoadingSkeleton"
 import Image from "next/image"
 import Link from "next/link"
-import { Suspense } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { BookOpen, Sparkles } from "lucide-react"
 import { playGameLaunchSound } from "@/lib/sounds"
 import { useNativeApp } from "@/lib/use-native-app"
@@ -28,10 +28,45 @@ export function ClientHomePage({
 }: ClientHomePageProps) {
   const isNative = Capacitor.isNativePlatform()
   const { vibrateLight } = useNativeApp()
+  const [showFeatureTip, setShowFeatureTip] = useState(false)
+  const [continueFeature, setContinueFeature] = useState<{ name: string; href: string } | null>(null)
   const featureLinks = [
     { name: "Bible Games", href: "/bible-games", description: "Play new games", icon: BookOpen },
     { name: "Bible Quiz", href: "/bible-quiz", description: "Challenge yourself", icon: Sparkles },
   ]
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    const dismissed = window.localStorage.getItem("lt-mobile-feature-tip")
+    setShowFeatureTip(!dismissed)
+
+    const savedFeature = window.localStorage.getItem("lt-last-feature-route")
+    if (savedFeature) {
+      try {
+        const parsed = JSON.parse(savedFeature)
+        if (parsed?.href && parsed?.name) {
+          setContinueFeature(parsed)
+        }
+      } catch {
+        window.localStorage.removeItem("lt-last-feature-route")
+      }
+    }
+  }, [])
+
+  const saveFeatureVisit = (name: string, href: string) => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("lt-last-feature-route", JSON.stringify({ name, href }))
+      setContinueFeature({ name, href })
+    }
+  }
+
+  const dismissFeatureTip = () => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("lt-mobile-feature-tip", "dismissed")
+    }
+    setShowFeatureTip(false)
+  }
 
   return (
     <div className={isNative ? "space-y-4" : "space-y-6 max-w-2xl mx-auto pb-12"}>
@@ -57,6 +92,72 @@ export function ClientHomePage({
         </div>
       )}
 
+      {continueFeature && (
+        <div className="rounded-2xl border border-brand-400/20 bg-gradient-to-br from-brand-500/10 via-surface-900 to-surface-950 p-4 shadow-[0_0_30px_rgba(59,130,246,0.12)] md:hidden">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-brand-400">Continue playing</p>
+              <h2 className="mt-1 text-sm font-semibold text-white">Pick up where you left off</h2>
+              <p className="mt-1 text-xs text-surface-400">Jump back into {continueFeature.name} anytime.</p>
+            </div>
+            <Link
+              href={continueFeature.href}
+              onClick={() => {
+                playGameLaunchSound()
+                void vibrateLight()
+              }}
+              className="rounded-full border border-brand-400/20 bg-brand-500/10 px-3 py-1.5 text-xs font-semibold text-brand-300 transition-colors hover:bg-brand-500/20"
+            >
+              Open
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {showFeatureTip && (
+        <div className="rounded-2xl border border-amber-400/20 bg-gradient-to-br from-amber-500/10 via-surface-900 to-surface-950 p-4 shadow-[0_0_30px_rgba(234,179,8,0.12)] md:hidden">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-amber-400">New here?</p>
+              <h2 className="mt-1 text-sm font-semibold text-white">Try the Bible Games and Quiz</h2>
+              <p className="mt-1 text-xs text-surface-400">A fun way to learn, play, and earn XP right from your phone.</p>
+            </div>
+            <button
+              type="button"
+              onClick={dismissFeatureTip}
+              className="text-xs font-medium text-surface-400 transition-colors hover:text-white"
+            >
+              Skip
+            </button>
+          </div>
+
+          <div className="mt-3 flex gap-2">
+            <Link
+              href="/bible-games"
+              onClick={() => {
+                saveFeatureVisit("Bible Games", "/bible-games")
+                playGameLaunchSound()
+                void vibrateLight()
+              }}
+              className="flex-1 rounded-xl border border-amber-400/20 bg-amber-500/10 px-3 py-2 text-center text-sm font-semibold text-amber-300 transition-colors hover:bg-amber-500/20"
+            >
+              Play games
+            </Link>
+            <Link
+              href="/bible-quiz"
+              onClick={() => {
+                saveFeatureVisit("Bible Quiz", "/bible-quiz")
+                playGameLaunchSound()
+                void vibrateLight()
+              }}
+              className="flex-1 rounded-xl border border-white/10 bg-surface-950/80 px-3 py-2 text-center text-sm font-semibold text-white transition-colors hover:border-brand-400/40 hover:bg-brand-500/10"
+            >
+              Take quiz
+            </Link>
+          </div>
+        </div>
+      )}
+
       <div className="rounded-2xl border border-amber-400/20 bg-gradient-to-br from-amber-500/10 via-surface-900 to-surface-950 p-3 shadow-[0_0_30px_rgba(234,179,8,0.12)] md:hidden">
         <div className="mb-3 flex items-center justify-between">
           <div>
@@ -76,6 +177,7 @@ export function ClientHomePage({
                 key={feature.name}
                 href={feature.href}
                 onClick={() => {
+                  saveFeatureVisit(feature.name, feature.href)
                   playGameLaunchSound()
                   void vibrateLight()
                 }}

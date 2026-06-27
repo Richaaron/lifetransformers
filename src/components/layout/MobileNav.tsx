@@ -72,6 +72,9 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
                 onClick={() => {
                   onClose()
                   if (item.href === "/bible-games" || item.href === "/bible-quiz") {
+                    if (typeof window !== "undefined") {
+                      window.localStorage.setItem("lt-last-feature-route", JSON.stringify({ name: item.name, href: item.href }))
+                    }
                     playGameLaunchSound()
                     void vibrateLight()
                   }
