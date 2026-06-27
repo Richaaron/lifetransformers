@@ -89,6 +89,43 @@ export default function BibleGameClient({ gameKey, config, challenges, items, ex
     setShelfOrder([])
   }, [gameKey, currentChallengeId, items, config.itemKey])
 
+  const noGameData = currentChallengeId && (
+    !currentChallenge ||
+    currentItems.length === 0 ||
+    (gameKey === 'bible-trivia-tower' && currentTowerQuestions.length === 0)
+  )
+
+  useEffect(() => {
+    if (!noGameData) return
+
+    const missingDetails = {
+      gameKey,
+      currentChallengeId,
+      hasChallenge: Boolean(currentChallenge),
+      challengeCount: challenges.length,
+      itemCount: currentItems.length,
+      extraItemCount: currentTowerQuestions.length,
+    }
+
+    console.warn('Bible game loaded with missing data:', missingDetails)
+  }, [noGameData, gameKey, currentChallengeId, currentChallenge, challenges.length, currentItems.length, currentTowerQuestions.length])
+
+  if (noGameData) {
+    return (
+      <div className={isNative ? 'p-4' : 'max-w-4xl mx-auto p-6'}>
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-bold text-white mb-2">{config.title}</h1>
+          <p className="text-surface-400">{config.description}</p>
+        </div>
+        <Card className="p-6 border-dashed border-white/20 bg-surface-950 text-center">
+          <p className="text-surface-400">
+            No challenge data is currently available for this game. Please check that the Bible game seed data has been loaded into Supabase, or try again later.
+          </p>
+        </Card>
+      </div>
+    )
+  }
+
   const clearTimer = useCallback(() => {
     if (timerRef.current) {
       clearInterval(timerRef.current)
