@@ -113,6 +113,21 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
               Profile
             </Link>
           )}
+          {username && (
+            <a
+              href={`/profile/${username}#profile-photos`}
+              onClick={onClose}
+              className={cn(
+                "flex items-center gap-3 px-3 py-3 rounded-md text-base font-medium transition-colors",
+                pathname.startsWith("/profile")
+                  ? "bg-brand-500/10 text-brand-500"
+                  : "text-surface-200 hover:bg-surface-800 hover:text-white"
+              )}
+            >
+              <Users className="w-5 h-5" />
+              Photos
+            </a>
+          )}
         </nav>
 
         <div className="p-4 border-t border-surface-800 space-y-1">

@@ -13,6 +13,7 @@ import { getProfilePosts } from "@/lib/queries/profile-posts"
 import { PostCard } from "@/components/feed/PostCard"
 import { PostComposer } from "@/components/feed/PostComposer"
 import { LevelAwareName } from "@/components/ui/LevelAwareName"
+import PhotosSection from "@/components/profile/PhotosSection"
 
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
   const { username } = await params
@@ -78,6 +79,13 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
 
   // Fetch user's posts
   const posts = await getProfilePosts(profile.id)
+
+  // Fetch user's photos
+  const { data: photos } = await supabase
+    .from("user_photos")
+    .select("*")
+    .eq("user_id", profile.id)
+    .order("created_at", { ascending: false })
 
   // Fetch reaction map for posts
   let reactionMap: Record<string, {
@@ -198,7 +206,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
         </Card>
       </div>
 
-      <Card className="bg-surface-900 border-surface-800">
+      <Card id="profile-photos" className="bg-surface-900 border-surface-800">
         <CardHeader>
           <CardTitle className="text-sm">Level Progress</CardTitle>
         </CardHeader>
@@ -249,6 +257,15 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
           </CardContent>
         </Card>
       )}
+
+        <Card className="bg-surface-900 border-surface-800">
+          <CardHeader>
+            <CardTitle>Photos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PhotosSection initialPhotos={photos || []} profileId={profile.id} isOwn={isOwnProfile} />
+          </CardContent>
+        </Card>
 
       {/* Profile Wall / Posts */}
       <div className="space-y-4">

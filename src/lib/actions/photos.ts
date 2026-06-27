@@ -1,47 +1,35 @@
 "use server"
 
 import crypto from "crypto"
+import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/server"
 
-type UploadBucket = "avatars" | "posts" | "videos"
-
-export async function uploadMediaAction(formData: FormData): Promise<{ url?: string; error?: string }> {
+export async function uploadPhotoAction(formData: FormData): Promise<{ photo?: any; error?: string }> {
   const file = formData.get("file") as File | null
   if (!file) return { error: "No file provided" }
 
-  const bucket = (formData.get("bucket") as UploadBucket) || "posts"
-  const userId = formData.get("userId") as string
-  if (!userId) return { error: "No user ID provided" }
+  const caption = (formData.get("caption") as string) || null
 
   try {
-    // 1. Verify the user is authenticated and matches the userId
-    const authClient = await createClient()
-    const { data: { user } } = await authClient.auth.getUser()
-    
-    if (!user || user.id !== userId) {
-      return { error: "Unauthorized" }
-    }
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: "Unauthorized" }
 
-    const arrayBuffer = await file.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
-    
-    // Upload to Cloudinary from the server (recommended when Supabase storage isn't serving files)
+    // Upload to Cloudinary server-side
     const cloudName = process.env.CLOUDINARY_CLOUD_NAME
     const apiKey = process.env.CLOUDINARY_API_KEY
     const apiSecret = process.env.CLOUDINARY_API_SECRET
-
     if (!cloudName || !apiKey || !apiSecret) {
-      return { error: "Cloudinary credentials are not configured in environment variables" }
+      return { error: "Cloudinary not configured" }
     }
 
-    const folder = `profiles/${userId}`
+    const folder = `photos/${user.id}`
     const timestamp = Math.floor(Date.now() / 1000)
-
-    // Build the string to sign (params must be sorted lexicographically)
     const paramsToSign = `folder=${folder}&timestamp=${timestamp}`
     const signature = crypto.createHash("sha1").update(paramsToSign + apiSecret).digest("hex")
 
-    // Cloudinary accepts data URIs for the `file` field. Convert buffer to base64.
+    const arrayBuffer = await file.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
     const base64 = buffer.toString("base64")
     const dataUri = `data:${file.type};base64,${base64}`
 
@@ -51,7 +39,6 @@ export async function uploadMediaAction(formData: FormData): Promise<{ url?: str
     form.append("timestamp", String(timestamp))
     form.append("signature", signature)
     form.append("folder", folder)
-    // Optionally include a deterministic public_id, here we use timestamp
     form.append("public_id", `${Date.now()}`)
 
     const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
@@ -65,7 +52,17 @@ export async function uploadMediaAction(formData: FormData): Promise<{ url?: str
     }
 
     const json = await res.json()
-    return { url: json.secure_url }
+
+    // Insert metadata into user_photos table
+    const { data: inserted, error: insertError } = await supabase
+      .from("user_photos")
+      .insert({ user_id: user.id, public_url: json.secure_url, public_id: json.public_id, caption })
+      .select("*")
+      .single()
+
+    if (insertError) return { error: insertError.message }
+
+    return { photo: inserted }
   } catch (err: any) {
     return { error: err.message || "An unexpected error occurred" }
   }

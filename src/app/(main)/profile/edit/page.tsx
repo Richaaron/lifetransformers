@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { getInitials } from "@/lib/utils"
 import { Loader2, CheckCircle, Camera, X, ImagePlus } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
+import UploadWidget from "@/components/cloudinary/UploadWidget"
 import { useRouter } from "next/navigation"
 import { uploadMediaAction } from "@/lib/actions/media"
 import { formatFileSize } from "@/lib/utils/file-upload"
@@ -22,12 +23,14 @@ export default function EditProfilePage() {
   const [currentAvatar, setCurrentAvatar] = useState("")
   const [previewAvatar, setPreviewAvatar] = useState("")
   const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(null)
+  const [cloudinaryAvatarUrl, setCloudinaryAvatarUrl] = useState<string | null>(null)
 
   // Cover refs & state
   const coverInputRef = useRef<HTMLInputElement>(null)
   const [currentCover, setCurrentCover] = useState("")
   const [previewCover, setPreviewCover] = useState("")
   const [selectedCoverFile, setSelectedCoverFile] = useState<File | null>(null)
+  const [cloudinaryCoverUrl, setCloudinaryCoverUrl] = useState<string | null>(null)
 
   // Profile fields
   const [displayName, setDisplayName] = useState("")
@@ -154,14 +157,19 @@ export default function EditProfilePage() {
     let avatarUrl = currentAvatar
     let coverUrl = currentCover
 
-    if (selectedAvatarFile || selectedCoverFile) {
+    if (selectedAvatarFile || selectedCoverFile || cloudinaryAvatarUrl || cloudinaryCoverUrl) {
       setIsUploading(true)
-      if (selectedAvatarFile) {
+      if (cloudinaryAvatarUrl) {
+        avatarUrl = cloudinaryAvatarUrl
+      } else if (selectedAvatarFile) {
         const url = await uploadFile(selectedAvatarFile, "avatars")
         if (!url) { setIsSaving(false); setIsUploading(false); return }
         avatarUrl = url
       }
-      if (selectedCoverFile) {
+
+      if (cloudinaryCoverUrl) {
+        coverUrl = cloudinaryCoverUrl
+      } else if (selectedCoverFile) {
         const url = await uploadFile(selectedCoverFile, "posts")
         if (!url) { setIsSaving(false); setIsUploading(false); return }
         coverUrl = url
@@ -240,6 +248,12 @@ export default function EditProfilePage() {
           )}
         </div>
         <input ref={coverInputRef} type="file" accept="image/*" onChange={handleCoverSelect} className="hidden" />
+        <div className="px-4 py-2 border-t border-surface-700 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <UploadWidget buttonText="Cloudinary" folder={`profiles/${userId}/covers`} onUpload={(url) => { setCloudinaryCoverUrl(url); setPreviewCover(url); setCurrentCover(url) }} />
+            <span className="text-xs text-surface-400">or use local file</span>
+          </div>
+        </div>
         {selectedCoverFile && (
           <div className="px-4 py-2 border-t border-surface-700 flex items-center justify-between text-xs text-surface-400">
             <span>{selectedCoverFile.name}</span>
@@ -268,6 +282,9 @@ export default function EditProfilePage() {
             </div>
 
             <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarSelect} className="hidden" />
+            <div className="mt-3">
+              <UploadWidget buttonText="Cloudinary" folder={`profiles/${userId}/avatars`} onUpload={(url) => { setCloudinaryAvatarUrl(url); setPreviewAvatar(url); setCurrentAvatar(url) }} />
+            </div>
 
             {selectedAvatarFile && (
               <div className="flex items-center gap-3 p-3 bg-surface-800 rounded-lg">

@@ -3,11 +3,9 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.lifetransformers.app',
   appName: 'Life Transformers',
-  webDir: 'out',
+  webDir: 'public',
   server: {
-    androidScheme: 'https',
-    url: 'https://lifetransformers.netlify.app',
-    cleartext: false
+    androidScheme: 'https'
   },
   plugins: {
     SplashScreen: {
