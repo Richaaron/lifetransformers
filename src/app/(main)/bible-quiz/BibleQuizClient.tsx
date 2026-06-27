@@ -6,6 +6,7 @@ import { useIsNative } from '@/lib/hooks/use-is-native';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Trophy, BookOpen, ChevronRight, Clock } from 'lucide-react';
+import { playCorrectSound, playIncorrectSound, playGameCompleteSound } from '@/lib/sounds';
 
 interface BibleQuiz {
   id: string;
@@ -116,7 +117,10 @@ export default function BibleQuizClient({ initialQuizzes, initialQuestions }: Bi
     setLoading(true);
 
     if (selectedAnswer === currentQuestion.correct_answer) {
+      playCorrectSound();
       setScore((prev) => prev + 1);
+    } else {
+      playIncorrectSound();
     }
 
     if (currentQuestionIndex < currentQuestions.length - 1) {
@@ -125,6 +129,7 @@ export default function BibleQuizClient({ initialQuizzes, initialQuestions }: Bi
     } else {
       // Quiz complete - submit results and award XP
       await submitQuizResults();
+      playGameCompleteSound();
       setShowResults(true);
       setLoading(false);
     }

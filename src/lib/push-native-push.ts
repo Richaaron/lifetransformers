@@ -2,7 +2,34 @@
 
 import { useEffect } from "react";
 import { PushNotifications } from "@capacitor/push-notifications";
+import { LocalNotifications } from "@capacitor/local-notifications";
 import { Capacitor } from "@capacitor/core";
+
+const NOTIFICATION_CHANNEL = "notifications";
+
+async function ensureLocalNotificationPermission() {
+  const permission = await LocalNotifications.checkPermissions();
+  if (permission.display === "prompt") {
+    await LocalNotifications.requestPermissions();
+  }
+}
+
+async function showForegroundNotification(title: string, body: string, data: any = {}) {
+  await ensureLocalNotificationPermission();
+  const id = Date.now();
+
+  await LocalNotifications.schedule({
+    notifications: [
+      {
+        id,
+        title,
+        body,
+        extra: data,
+        channelId: NOTIFICATION_CHANNEL,
+      },
+    ],
+  });
+}
 
 export const useNativePushNotifications = () => {
   useEffect(() => {
@@ -52,14 +79,22 @@ export const useNativePushNotifications = () => {
           console.error("Push registration error:", error);
         });
 
-        PushNotifications.addListener("pushNotificationReceived", (notification) => {
+        PushNotifications.addListener("pushNotificationReceived", async (notification) => {
           console.log("Push notification received:", notification);
+
+          const title = notification.notification?.title ?? notification.title;
+          const body = notification.notification?.body ?? notification.body;
+          const data = notification.notification?.data ?? notification.data;
+
+          if (typeof document !== "undefined" && document.visibilityState === "visible") {
+            await showForegroundNotification(title, body, data);
+          }
         });
 
         PushNotifications.addListener("pushNotificationActionPerformed", (notification) => {
           console.log("Push notification action performed:", notification);
           // Extract URL from data payload and navigate
-          const url = notification.notification?.data?.url;
+          const url = notification.notification?.data?.url ?? notification.data?.url;
           if (url && typeof window !== 'undefined') {
             window.location.href = url;
           }

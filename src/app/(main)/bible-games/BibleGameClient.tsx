@@ -7,6 +7,7 @@ import { useIsNative } from '@/lib/hooks/use-is-native'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { BookOpen, Trophy, Bookmark, Clock } from 'lucide-react'
+import { playCorrectSound, playIncorrectSound, playGameCompleteSound } from '@/lib/sounds'
 
 interface GameConfig {
   title: string
@@ -305,6 +306,7 @@ export default function BibleGameClient({ gameKey, config, challenges, items, ex
   }
 
   function showCompletionToast(message: string) {
+    playGameCompleteSound()
     toast.success(message, {
       duration: 4000,
     })
@@ -409,7 +411,10 @@ export default function BibleGameClient({ gameKey, config, challenges, items, ex
 
     const correct = getCorrectAnswer(currentQuestion)
     if (selectedAnswer === correct) {
+      playCorrectSound()
       setScore((prev) => prev + 1)
+    } else {
+      playIncorrectSound()
     }
 
     if (currentQuestionIndex < currentItems.length - 1) {

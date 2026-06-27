@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { ActionResult } from "@/lib/types"
 import { encryptMessage, decryptMessages } from "@/lib/utils/encryption"
+import { sendPushNotification } from "./push-notifications"
 
 export async function getOrCreateConversation(targetUserId: string): Promise<ActionResult<{ id: string }>> {
   const supabase = await createClient()
@@ -71,6 +72,35 @@ export async function sendMessage(conversationId: string, content: string): Prom
     .single()
 
   if (error || !insertedMessage) return { error: error?.message || "Failed to send message" }
+
+  // Send notification for the recipient
+  const { data: recipients } = await supabase
+    .from('conversation_participants')
+    .select('user_id')
+    .eq('conversation_id', conversationId)
+    .neq('user_id', user.id)
+
+  const recipientId = recipients?.[0]?.user_id
+  if (recipientId) {
+    await supabase.from('notifications').insert({
+      user_id: recipientId,
+      actor_id: user.id,
+      type: 'message',
+    })
+
+    const { data: actor } = await supabase
+      .from('profiles')
+      .select('display_name')
+      .eq('id', user.id)
+      .single()
+
+    await sendPushNotification(
+      recipientId,
+      "New Message",
+      `${actor?.display_name || "Someone"} sent you a new message.",
+      `/messages/${conversationId}`
+    )
+  }
 
   // Award XP to sender for engaging in chat
   await supabase.rpc("add_xp", {

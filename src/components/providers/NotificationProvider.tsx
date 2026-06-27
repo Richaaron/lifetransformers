@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
 import { Bell } from "lucide-react"
 import { subscribeToPushNotifications } from "@/lib/push-notifications"
+import { playNotificationSound } from "@/lib/sounds"
 
 interface NotificationContextType {
   unreadCount: number
@@ -117,6 +118,7 @@ export function NotificationProvider({
             description = `${actorName} interacted with you`
           }
 
+          playNotificationSound()
           toast(title, {
             description,
             icon: <Bell className="w-4 h-4 text-brand-500" />,
