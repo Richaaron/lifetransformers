@@ -97,7 +97,7 @@ export async function sendMessage(conversationId: string, content: string): Prom
     await sendPushNotification(
       recipientId,
       "New Message",
-      `${actor?.display_name || "Someone"} sent you a new message.",
+      `${actor?.display_name || "Someone"} sent you a new message.`,
       `/messages/${conversationId}`
     )
   }

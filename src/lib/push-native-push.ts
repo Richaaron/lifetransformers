@@ -94,7 +94,7 @@ export const useNativePushNotifications = () => {
         PushNotifications.addListener("pushNotificationActionPerformed", (notification) => {
           console.log("Push notification action performed:", notification);
           // Extract URL from data payload and navigate
-          const url = notification.notification?.data?.url ?? notification.data?.url;
+          const url = notification.notification?.data?.url as string | undefined;
           if (url && typeof window !== 'undefined') {
             window.location.href = url;
           }
