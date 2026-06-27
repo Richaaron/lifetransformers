@@ -3,10 +3,12 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Home, Users, MessageSquare, Search, Settings, LogOut, X, Trophy, User } from "lucide-react"
+import { Home, Users, MessageSquare, Search, Settings, LogOut, X, Trophy, User, BookOpen, Sparkles } from "lucide-react"
 import { logoutAction } from "@/lib/actions/auth"
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { playGameLaunchSound } from "@/lib/sounds"
+import { useNativeApp } from "@/lib/use-native-app"
 
 interface MobileNavProps {
   isOpen: boolean
@@ -15,6 +17,8 @@ interface MobileNavProps {
 
 const navItems = [
   { name: "Home", href: "/home", icon: Home },
+  { name: "Bible Games", href: "/bible-games", icon: BookOpen, badge: "New" },
+  { name: "Bible Quiz", href: "/bible-quiz", icon: Sparkles, badge: "New" },
   { name: "Friends", href: "/friends", icon: Users },
   { name: "Messages", href: "/messages", icon: MessageSquare },
   { name: "Groups", href: "/groups", icon: Users },
@@ -25,6 +29,7 @@ const navItems = [
 export function MobileNav({ isOpen, onClose }: MobileNavProps) {
   const pathname = usePathname()
   const [username, setUsername] = useState("")
+  const { vibrateLight } = useNativeApp()
 
   useEffect(() => {
     const supabase = createClient()
@@ -51,7 +56,7 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
       <div className="fixed inset-y-0 left-0 w-3/4 max-w-sm bg-surface-950 shadow-xl flex flex-col animate-slide-in-right">
         <div className="h-16 flex items-center justify-between px-4 border-b border-surface-800">
           <span className="font-bold text-lg text-brand-500">Menu</span>
-          <button onClick={onClose} className="p-2 text-surface-200 hover:text-white">
+          <button onClick={onClose} className="p-2 text-surface-200 hover:text-white" aria-label="Close menu">
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -64,7 +69,13 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
                 key={item.name}
                 href={item.href}
                 prefetch={true}
-                onClick={onClose}
+                onClick={() => {
+                  onClose()
+                  if (item.href === "/bible-games" || item.href === "/bible-quiz") {
+                    playGameLaunchSound()
+                    void vibrateLight()
+                  }
+                }}
                 className={cn(
                   "flex items-center gap-3 px-3 py-3 rounded-md text-base font-medium transition-colors",
                   isActive
@@ -73,7 +84,12 @@ export function MobileNav({ isOpen, onClose }: MobileNavProps) {
                 )}
               >
                 <item.icon className="w-5 h-5" />
-                {item.name}
+                <span>{item.name}</span>
+                {item.badge && (
+                  <span className="ml-auto rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-400">
+                    {item.badge}
+                  </span>
+                )}
               </Link>
             )
           })}
