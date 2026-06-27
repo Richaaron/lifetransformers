@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns'
+import { LEVEL_NAMES } from '@/lib/types'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -67,4 +68,14 @@ export function buildInviteUrl(inviteCode: string): string {
     process.env.NEXT_PUBLIC_APP_URL ||
     (typeof window !== 'undefined' ? window.location.origin : '')
   return `${base}/invite/${inviteCode}`
+}
+
+export function getDisplayNameWithLevel(displayName?: string | null, level?: number | null): string {
+  const baseName = (displayName || '').trim()
+  if (!baseName) return 'User'
+
+  const levelInfo = LEVEL_NAMES[level ?? 1] || LEVEL_NAMES[1]
+  const title = levelInfo?.name || 'Follower'
+
+  return `${title} ${baseName}`
 }

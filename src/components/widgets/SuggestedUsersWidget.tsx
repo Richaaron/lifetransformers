@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { getInitials } from "@/lib/utils"
+import { LevelAwareName } from "@/components/ui/LevelAwareName"
 import { Users, UserPlus, Loader2 } from "lucide-react"
 
 export function SuggestedUsersWidget() {
@@ -105,7 +106,7 @@ export function SuggestedUsersWidget() {
               </Avatar>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-surface-100 group-hover:text-white truncate text-sm">
-                  {u.display_name}
+                  <LevelAwareName displayName={u.display_name} userId={u.id} className="font-semibold text-surface-100 group-hover:text-white truncate text-sm" />
                 </p>
                 <p className="text-xs text-surface-500 truncate">@{u.username}</p>
               </div>

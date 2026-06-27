@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { getInitials } from "@/lib/utils"
+import { LevelAwareName } from "@/components/ui/LevelAwareName"
 import Link from "next/link"
 import { OnlineIndicator } from "@/components/ui/OnlineIndicator"
 
@@ -40,7 +41,7 @@ export function FriendCard({ profile, type, friendshipId, onAction, isPending, i
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-base font-semibold text-white truncate">
-              {profile.display_name}
+              <LevelAwareName displayName={profile.display_name} userId={profile.id} className="text-base font-semibold text-white truncate" />
             </h3>
             <p className="text-sm text-surface-400 truncate">
               @{profile.username}

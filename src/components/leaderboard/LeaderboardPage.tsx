@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { getInitials } from "@/lib/utils"
+import { LevelAwareName } from "@/components/ui/LevelAwareName"
 import { Trophy, Medal, Crown, Star, TrendingUp } from "lucide-react"
 import Link from "next/link"
 import type { LeaderboardEntry } from "@/lib/types"
@@ -130,7 +131,7 @@ export function LeaderboardPage({ leaderboard, currentUserId }: LeaderboardPageP
                 </Avatar>
                 <div className="min-w-0">
                   <p className={`font-bold truncate text-[14px] ${isCurrentUser ? "text-brand-400" : "text-white group-hover/row:text-brand-400"} transition-colors`}>
-                    {entry.display_name} {isCurrentUser && <span className="text-brand-500 text-[11px] font-semibold ml-1">(You)</span>}
+                    <LevelAwareName displayName={entry.display_name} userId={entry.user_id} className="inline" /> {isCurrentUser && <span className="text-brand-500 text-[11px] font-semibold ml-1">(You)</span>}
                   </p>
                   <div className="flex items-center gap-2 mt-0.5">
                     <LevelStars level={entry.level} />

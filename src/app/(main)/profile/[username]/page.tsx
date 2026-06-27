@@ -12,6 +12,7 @@ import { ProfileMessageButton } from "@/components/profile/ProfileMessageButton"
 import { getProfilePosts } from "@/lib/queries/profile-posts"
 import { PostCard } from "@/components/feed/PostCard"
 import { PostComposer } from "@/components/feed/PostComposer"
+import { LevelAwareName } from "@/components/ui/LevelAwareName"
 
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
   const { username } = await params
@@ -128,7 +129,9 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
               displayName={profile.display_name} 
             />
             <div className="flex-1 text-center sm:text-left">
-              <h1 className="text-2xl font-bold text-white">{profile.display_name}</h1>
+              <h1 className="text-2xl font-bold text-white">
+                <LevelAwareName displayName={profile.display_name} userId={profile.id} />
+              </h1>
               <p className="text-surface-400">@{profile.username}</p>
               <div className="flex items-center justify-center sm:justify-start gap-2 mt-2">
                 <div style={{ display: "flex", gap: 2 }}>

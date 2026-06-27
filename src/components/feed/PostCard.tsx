@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { getInitials, formatRelativeTime } from "@/lib/utils"
+import { LevelAwareName } from "@/components/ui/LevelAwareName"
 import { cn } from "@/lib/utils"
 import { Capacitor } from "@capacitor/core"
 import { Heart, MessageCircle, MoreHorizontal, Trash2, Send, ChevronDown, ChevronUp, Flag } from "lucide-react"
@@ -171,7 +172,7 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
             </Avatar>
             <div>
               <p className={cn("font-semibold text-white leading-tight", isNative && "text-[15px]")}>
-                {post.author.display_name}
+                <LevelAwareName displayName={post.author.display_name} userId={post.author.id} className={cn("font-semibold text-white leading-tight", isNative && "text-[15px]")} />
               </p>
               <p suppressHydrationWarning className={cn("text-surface-400 mt-0.5", isNative && "text-xs")}>
                 @{post.author.username} · {formatRelativeTime(post.created_at)}
@@ -318,7 +319,7 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
                                 "font-semibold text-white hover:text-brand-400 transition-colors",
                                 isNative ? "text-sm" : "text-sm"
                               )}>
-                                {comment.author?.display_name}
+                                <LevelAwareName displayName={comment.author?.display_name} userId={comment.author?.id} className="font-medium text-white" />
                               </Link>
                               <span suppressHydrationWarning className={cn("text-surface-500", isNative && "text-[11px]")}>
                                 {formatRelativeTime(comment.created_at)}
@@ -401,7 +402,7 @@ export function PostCard({ post, currentUserId, reactionSummary }: PostCardProps
                                       "font-semibold text-white hover:text-brand-400 transition-colors",
                                       isNative ? "text-xs" : "text-xs"
                                     )}>
-                                      {reply.author?.display_name}
+                                      <LevelAwareName displayName={reply.author?.display_name} userId={reply.author?.id} className="font-medium text-white" />
                                     </Link>
                                     <span suppressHydrationWarning className="text-[11px] text-surface-500">
                                       {formatRelativeTime(reply.created_at)}

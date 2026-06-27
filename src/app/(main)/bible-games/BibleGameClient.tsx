@@ -74,6 +74,17 @@ export default function BibleGameClient({ gameKey, config, challenges, items, ex
 
   const currentQuestion = currentItems[currentQuestionIndex]
 
+  const currentQuestionAnswers = useMemo(() => {
+    if (!currentQuestion) return []
+
+    const answers = [
+      currentQuestion.correct_speaker || currentQuestion.correct_story || currentQuestion.correct_reference || currentQuestion.character2 || currentQuestion.correct_answer,
+      ...(currentQuestion.wrong_speakers || currentQuestion.wrong_stories || currentQuestion.wrong_references || currentQuestion.wrong_character2 || currentQuestion.wrong_answers || []),
+    ]
+
+    return shuffleArray(answers)
+  }, [currentQuestion, currentQuestionIndex, gameKey, currentChallengeId])
+
   const currentTowerFloor = currentItems[towerFloorIndex]
   const currentTowerQuestions = useMemo(() => {
     if (gameKey !== 'bible-trivia-tower' || !currentTowerFloor) return []
@@ -223,15 +234,6 @@ export default function BibleGameClient({ gameKey, config, challenges, items, ex
     setBeeAnswer('')
     setBeeFeedback(null)
     startTimer()
-  }
-
-  function getShuffledAnswers(question: any) {
-    if (!question) return []
-    const answers = [
-      question.correct_speaker || question.correct_story || question.correct_reference || question.character2 || question.correct_answer,
-      ...(question.wrong_speakers || question.wrong_stories || question.wrong_references || question.wrong_character2 || question.wrong_answers || []),
-    ]
-    return shuffleArray(answers)
   }
 
   function getCorrectAnswer(question: any) {
@@ -476,7 +478,7 @@ export default function BibleGameClient({ gameKey, config, challenges, items, ex
         <Card className="p-6 mb-6">
           <h2 className="text-xl font-semibold text-white mb-4">{renderQuestionText(currentQuestion)}</h2>
           <div className="grid gap-3">
-            {getShuffledAnswers(currentQuestion).map((answer, index) => (
+            {currentQuestionAnswers.map((answer, index) => (
               <Button key={index} variant="outline" className="w-full text-left" onClick={() => handleAnswer(answer)} disabled={loading}>
                 {answer}
               </Button>
@@ -694,7 +696,7 @@ export default function BibleGameClient({ gameKey, config, challenges, items, ex
           </div>
           <p className="text-surface-300 text-lg mb-4">{currentQuestion?.question}</p>
           <div className="grid gap-3">
-            {getShuffledAnswers(currentQuestion).map((answer, index) => (
+            {currentQuestionAnswers.map((answer, index) => (
               <Button key={index} variant="outline" className="w-full text-left" onClick={() => handleTowerAnswer(answer)} disabled={loading}>
                 {answer}
               </Button>

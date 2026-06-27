@@ -9,6 +9,7 @@ import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { getInitials } from "@/lib/utils"
+import { LevelAwareName } from "@/components/ui/LevelAwareName"
 import Image from "next/image"
 import { NotificationBadge } from "@/components/layout/NotificationBadge"
 import { MessageBadge } from "@/components/layout/MessageBadge"
@@ -152,7 +153,9 @@ export function Sidebar() {
                 <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-surface-900" />
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-bold text-white truncate">{profile.display_name}</p>
+                <p className="text-xs font-bold text-white truncate">
+                  <LevelAwareName displayName={profile.display_name} userId={profile.id} className="text-xs font-bold text-white truncate" />
+                </p>
                 <p className={cn("text-[10px] font-semibold uppercase tracking-wider", tier.color)}>{tier.label}</p>
               </div>
             </div>
