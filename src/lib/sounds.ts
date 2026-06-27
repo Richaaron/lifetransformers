@@ -85,9 +85,9 @@ export function playNotificationSound() {
 
 export function playGameLaunchSound() {
   playSequence([
-    { frequency: 740, duration: 0.06, type: 'triangle', volume: 0.1 },
-    { frequency: 980, duration: 0.08, type: 'triangle', volume: 0.1 },
-    { frequency: 1240, duration: 0.1, type: 'triangle', volume: 0.1 },
+    { frequency: 660, duration: 0.08, type: 'square', volume: 0.08 },
+    { frequency: 830, duration: 0.08, type: 'square', volume: 0.08 },
+    { frequency: 1040, duration: 0.1, type: 'triangle', volume: 0.09 },
   ], 0.02);
 }
 

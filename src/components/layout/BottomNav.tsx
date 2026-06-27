@@ -35,7 +35,7 @@ export function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden safe-area-bottom">
-      <div className="flex items-center justify-around h-20 bg-surface-900/95 backdrop-blur-xl border-t border-white/5">
+      <div className="flex items-center justify-around h-24 border-t border-white/5 bg-surface-900/95 px-2 pb-2 pt-1 backdrop-blur-xl">
         {tabs.map((tab) => {
           const isActive =
             tab.name === "Profile"
@@ -59,19 +59,19 @@ export function BottomNav() {
                 }
               }}
               className={cn(
-                "flex flex-col items-center gap-1 px-3 py-2 transition-all duration-300",
+                "flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2.5 transition-all duration-300",
                 isActive
-                  ? "text-brand-400"
+                  ? "scale-[1.02] text-brand-400"
                   : "text-surface-400 hover:text-surface-200"
               )}
             >
               <div className={cn(
-                "relative flex items-center justify-center w-14 h-8 rounded-full transition-all duration-300",
-                isActive && "bg-brand-500/15"
+                "relative flex h-10 w-10 items-center justify-center rounded-full transition-all duration-300",
+                isActive && "bg-brand-500/15 shadow-[0_0_18px_rgba(59,130,246,0.18)]"
               )}>
-                <tab.icon className={cn("w-6 h-6", isActive && "fill-brand-400/20")} />
+                <tab.icon className={cn("h-5 w-5", isActive && "fill-brand-400/20")} />
               </div>
-              <span className="text-xs font-medium">{tab.name}</span>
+              <span className="text-[11px] font-medium">{tab.name}</span>
             </Link>
           )
         })}

@@ -7,7 +7,7 @@ import { FeedSkeleton } from "./LoadingSkeleton"
 import Image from "next/image"
 import Link from "next/link"
 import { Suspense, useEffect, useState } from "react"
-import { BookOpen, Sparkles } from "lucide-react"
+import { BookOpen, MessageSquare, Sparkles, Users } from "lucide-react"
 import { playGameLaunchSound } from "@/lib/sounds"
 import { useNativeApp } from "@/lib/use-native-app"
 
@@ -33,6 +33,11 @@ export function ClientHomePage({
   const featureLinks = [
     { name: "Bible Games", href: "/bible-games", description: "Play new games", icon: BookOpen },
     { name: "Bible Quiz", href: "/bible-quiz", description: "Challenge yourself", icon: Sparkles },
+  ]
+  const quickActions = [
+    { name: "Games", href: "/bible-games", description: "Quick play", icon: BookOpen },
+    { name: "Quiz", href: "/bible-quiz", description: "Test yourself", icon: Sparkles },
+    { name: "Friends", href: "/friends", description: "Stay connected", icon: Users },
   ]
 
   useEffect(() => {
@@ -103,6 +108,7 @@ export function ClientHomePage({
             <Link
               href={continueFeature.href}
               onClick={() => {
+                saveFeatureVisit(continueFeature.name, continueFeature.href)
                 playGameLaunchSound()
                 void vibrateLight()
               }}
@@ -114,13 +120,51 @@ export function ClientHomePage({
         </div>
       )}
 
+      <div className="rounded-2xl border border-white/10 bg-surface-950/70 p-3 shadow-[0_0_24px_rgba(15,23,42,0.25)] md:hidden">
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-surface-500">Quick access</p>
+            <h2 className="text-sm font-semibold text-white">Jump into the good stuff</h2>
+          </div>
+          <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-surface-400">
+            Mobile
+          </span>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2">
+          {quickActions.map((action) => {
+            const Icon = action.icon
+            return (
+              <Link
+                key={action.name}
+                href={action.href}
+                onClick={() => {
+                  if (action.href === "/bible-games" || action.href === "/bible-quiz") {
+                    saveFeatureVisit(action.name === "Games" ? "Bible Games" : "Bible Quiz", action.href)
+                  }
+                  playGameLaunchSound()
+                  void vibrateLight()
+                }}
+                className="rounded-2xl border border-white/10 bg-surface-900/80 p-2.5 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-brand-400/30 hover:bg-brand-500/10"
+              >
+                <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-brand-500/15 text-brand-400">
+                  <Icon className="h-4 w-4" />
+                </div>
+                <p className="text-xs font-semibold text-white">{action.name}</p>
+                <p className="mt-0.5 text-[10px] text-surface-500">{action.description}</p>
+              </Link>
+            )
+          })}
+        </div>
+      </div>
+
       {showFeatureTip && (
         <div className="rounded-2xl border border-amber-400/20 bg-gradient-to-br from-amber-500/10 via-surface-900 to-surface-950 p-4 shadow-[0_0_30px_rgba(234,179,8,0.12)] md:hidden">
           <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-amber-400">New here?</p>
-              <h2 className="mt-1 text-sm font-semibold text-white">Try the Bible Games and Quiz</h2>
-              <p className="mt-1 text-xs text-surface-400">A fun way to learn, play, and earn XP right from your phone.</p>
+            <div className="flex-1">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-amber-400">Welcome</p>
+              <h2 className="mt-1 text-sm font-semibold text-white">Your mobile play space is ready</h2>
+              <p className="mt-1 text-xs text-surface-400">Jump into games, quizzes, and community moments from one simple screen.</p>
             </div>
             <button
               type="button"
@@ -129,6 +173,11 @@ export function ClientHomePage({
             >
               Skip
             </button>
+          </div>
+
+          <div className="mt-3 flex items-center gap-2 rounded-xl border border-white/10 bg-surface-950/70 px-3 py-2 text-[11px] text-surface-400">
+            <span className="h-2 w-2 rounded-full bg-amber-400" />
+            Play quick rounds, learn something new, and come back anytime.
           </div>
 
           <div className="mt-3 flex gap-2">

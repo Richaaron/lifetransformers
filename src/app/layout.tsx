@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import Image from 'next/image'
 import './globals.css'
 import { ThemeProvider } from "@/components/theme/ThemeProvider"
+import { AppShell } from "@/components/mobile/AppShell"
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -31,7 +32,7 @@ export default function RootLayout({
     <html lang="en" className="dark" suppressHydrationWarning>
       <body suppressHydrationWarning className={`${inter.className} bg-surface-950 text-white min-h-screen antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          {children}
+          <AppShell>{children}</AppShell>
         </ThemeProvider>
       </body>
     </html>
