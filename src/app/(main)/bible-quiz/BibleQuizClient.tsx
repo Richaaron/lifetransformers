@@ -42,6 +42,7 @@ export default function BibleQuizClient({ initialQuizzes, initialQuestions }: Bi
   const [showResults, setShowResults] = useState(false);
   const [loading, setLoading] = useState(false);
   const [timeLeft, setTimeLeft] = useState(15);
+  const [questionAnswers, setQuestionAnswers] = useState<Record<string, string[]>>({});
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentQuiz = initialQuizzes.find((q) => q.id === currentQuizId);
@@ -77,6 +78,22 @@ export default function BibleQuizClient({ initialQuizzes, initialQuestions }: Bi
   }, [currentQuizId, currentQuestionIndex, showResults, currentQuestion, startTimer, clearTimer]);
 
   useEffect(() => {
+    if (!currentQuestion) return;
+
+    setQuestionAnswers((prev) => {
+      const key = `${currentQuestion.id}`;
+      if (prev[key]) return prev;
+
+      const answers = [currentQuestion.correct_answer, ...currentQuestion.wrong_answers];
+      const shuffled = answers.sort(() => Math.random() - 0.5);
+      return {
+        ...prev,
+        [key]: shuffled,
+      };
+    });
+  }, [currentQuestion]);
+
+  useEffect(() => {
     if (timeLeft === 0 && currentQuizId && !showResults && !loading) {
       handleAnswer('__TIMEOUT__');
     }
@@ -88,6 +105,7 @@ export default function BibleQuizClient({ initialQuizzes, initialQuestions }: Bi
     setScore(0);
     setTotalQuestions(initialQuestions.filter((q) => q.quiz_id === quizId).length);
     setShowResults(false);
+    setQuestionAnswers({});
     startTimer();
   }
 
@@ -223,7 +241,7 @@ export default function BibleQuizClient({ initialQuizzes, initialQuestions }: Bi
             <h3 className="text-2xl font-semibold text-white mb-6">{currentQuestion?.question}</h3>
 
             <div className="space-y-3">
-              {getShuffledAnswers().map((answer, index) => (
+              {(questionAnswers[currentQuestion?.id ?? ''] || []).map((answer, index) => (
                 <Button
                   key={index}
                   variant="outline"
