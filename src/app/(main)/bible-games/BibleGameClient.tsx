@@ -63,6 +63,7 @@ export default function BibleGameClient({ gameKey, config, challenges, items, ex
   const [beeAnswer, setBeeAnswer] = useState('')
   const [beeFeedback, setBeeFeedback] = useState<string | null>(null)
   const [timeLeft, setTimeLeft] = useState(15)
+  const [timedOut, setTimedOut] = useState(false)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
 
   const currentChallenge = challenges.find((challenge) => challenge.id === currentChallengeId)
@@ -98,10 +99,12 @@ export default function BibleGameClient({ gameKey, config, challenges, items, ex
   const startTimer = useCallback(() => {
     clearTimer()
     setTimeLeft(15)
+    setTimedOut(false)
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearTimer()
+          setTimedOut(true)
           return 0
         }
         return prev - 1
@@ -117,16 +120,39 @@ export default function BibleGameClient({ gameKey, config, challenges, items, ex
   }, [currentChallengeId, currentQuestionIndex, showResults, startTimer, clearTimer])
 
   useEffect(() => {
-    if (timeLeft === 0 && currentChallengeId && !showResults && !loading) {
-      if (multipleChoiceGames.includes(gameKey)) {
-        handleAnswer('__TIMEOUT__')
-      } else if (gameKey === 'bible-bee') {
-        handleBeeSubmit()
-      } else if (gameKey === 'bible-trivia-tower') {
-        handleTowerAnswer('__TIMEOUT__')
+    if (!timedOut || !currentChallengeId || showResults || loading) return
+
+    if (multipleChoiceGames.includes(gameKey)) {
+      handleAnswer('__TIMEOUT__')
+    } else if (gameKey === 'verse-memory') {
+      if (currentQuestionIndex < currentItems.length - 1) {
+        setCurrentQuestionIndex((prev) => prev + 1)
+      } else {
+        completeVerseMemory()
+      }
+    } else if (gameKey === 'bible-trivia-tower') {
+      if (towerQuestionIndex < currentTowerQuestions.length - 1) {
+        setTowerQuestionIndex((prev) => prev + 1)
+      } else if (towerFloorIndex < currentItems.length - 1) {
+        setTowerFloorIndex((prev) => prev + 1)
+        setTowerQuestionIndex(0)
+      } else {
+        completeTriviaTower()
+      }
+    } else if (gameKey === 'bible-bee') {
+      setBeeFeedback(`Time's up! The word was "${currentItems[currentQuestionIndex]?.word}".`)
+      if (currentQuestionIndex < currentItems.length - 1) {
+        setTimeout(() => {
+          setCurrentQuestionIndex((prev) => prev + 1)
+          setBeeAnswer('')
+          setBeeFeedback(null)
+        }, 1500)
+      } else {
+        setTimeout(() => completeBibleBee(), 1500)
       }
     }
-  }, [timeLeft, currentChallengeId, showResults, loading, gameKey])
+    setTimedOut(false)
+  }, [timedOut, currentChallengeId, showResults, loading, gameKey])
 
   const activeChallengeIndex = useMemo(
     () => challenges.findIndex((challenge) => challenge.id === currentChallengeId),
