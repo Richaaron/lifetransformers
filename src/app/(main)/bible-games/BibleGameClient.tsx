@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { BookOpen, Trophy, Bookmark, Clock } from 'lucide-react'
 import { playCorrectSound, playIncorrectSound, playGameCompleteSound } from '@/lib/sounds'
+import { hasPlayedToday, recordGamePlay, type GameType } from '@/lib/game-session-utils'
 
 interface GameConfig {
   title: string
@@ -57,6 +58,59 @@ function buildQuestionAnswers(question: any) {
 export default function BibleGameClient({ gameKey, config, challenges, items, extraItems = [] }: BibleGameClientProps) {
   const isNative = useIsNative()
   const supabase = createClient()
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [playedChallenges, setPlayedChallenges] = useState<Set<string>>(new Set())
+
+  // Map gameKey to GameType for the tracking system
+  const getGameType = (key: string): GameType => {
+    const gameTypeMap: Record<string, GameType> = {
+      'verse-memory': 'verse_memory',
+      'who-said-it': 'who_said_it',
+      'name-that-story': 'story_quiz',
+      'bookshelf': 'bookshelf',
+      'bible-trivia-tower': 'trivia_tower',
+      'bible-bee': 'bible_bee',
+      'family-tree-builder': 'family_tree',
+      'bible-promise-match': 'promise_match',
+    }
+    return gameTypeMap[key] || ('verse_memory' as GameType)
+  }
+
+  const gameType = getGameType(gameKey)
+
+  useEffect(() => {
+    async function fetchUserAndPlayedChallenges() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        setCurrentUser(user)
+
+        if (user) {
+          try {
+            const played = new Set<string>()
+            for (const challenge of challenges) {
+              try {
+                const hasPlayed = await hasPlayedToday(user.id, gameType, challenge.id)
+                if (hasPlayed) {
+                  played.add(challenge.id)
+                }
+              } catch (error) {
+                console.error('Error checking play status for challenge:', challenge.id, error)
+                // Continue checking other challenges even if one fails
+              }
+            }
+            setPlayedChallenges(played)
+          } catch (error) {
+            console.error('Error loading played challenges:', error)
+            // Don't block UI on error - user can still see and play challenges
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user:', error)
+      }
+    }
+    fetchUserAndPlayedChallenges()
+    // Note: supabase not in deps - createClient is called in component, don't want effect re-running on every render
+  }, [challenges, gameType])
 
   const [currentChallengeId, setCurrentChallengeId] = useState<string | null>(null)
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
@@ -254,7 +308,13 @@ export default function BibleGameClient({ gameKey, config, challenges, items, ex
     setCurrentChallengeId(null)
   }
 
-  function startChallenge(challengeId: string) {
+  async function startChallenge(challengeId: string) {
+    const alreadyPlayed = await hasPlayedToday(currentUser?.id || '', gameType, challengeId)
+    if (alreadyPlayed) {
+      toast.error('You have already completed this challenge today! Come back tomorrow for another attempt.')
+      return
+    }
+
     setCurrentChallengeId(challengeId)
     setCurrentQuestionIndex(0)
     setScore(0)
@@ -292,6 +352,13 @@ export default function BibleGameClient({ gameKey, config, challenges, items, ex
       if (!user) return
 
       await supabase.from(attemptTable).insert({ ...attemptPayload, user_id: user.id })
+      
+      // Record the play to enforce daily limit
+      if (currentChallengeId) {
+        await recordGamePlay(user.id, gameType, currentChallengeId)
+        setPlayedChallenges(prev => new Set(prev).add(currentChallengeId))
+      }
+
       if (xpAmount > 0) {
         await supabase.rpc('add_xp', {
           p_user_id: user.id,
@@ -474,21 +541,29 @@ export default function BibleGameClient({ gameKey, config, challenges, items, ex
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
-          {challenges.map((challenge) => (
-            <Card key={challenge.id} className="p-5 border-white/10 hover:border-amber-500/30 transition-all cursor-pointer" onClick={() => startChallenge(challenge.id)}>
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <h2 className="text-xl font-semibold text-white">{challenge.title}</h2>
-                  <p className="text-surface-400 text-sm mt-2">{challenge.description || 'Learn the key Bible details in this challenge.'}</p>
+          {challenges.map((challenge) => {
+            const isCompleted = playedChallenges.has(challenge.id)
+            return (
+              <Card
+                key={challenge.id}
+                className={`p-5 border-white/10 ${isCompleted ? 'cursor-default opacity-60 hover:border-white/10' : 'hover:border-amber-500/30 transition-all cursor-pointer'}`}
+                onClick={() => !isCompleted && startChallenge(challenge.id)}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex-1">
+                    <h2 className="text-xl font-semibold text-white">{challenge.title}</h2>
+                    <p className="text-surface-400 text-sm mt-2">{challenge.description || 'Learn the key Bible details in this challenge.'}</p>
+                    {isCompleted && <p className="text-sm text-emerald-400 mt-2">✓ Completed today - Come back tomorrow!</p>}
+                  </div>
+                  <BookOpen className="w-8 h-8 text-amber-400 flex-shrink-0 ml-2" />
                 </div>
-                <BookOpen className="w-8 h-8 text-amber-400" />
-              </div>
-              <div className="flex items-center justify-between text-surface-400 text-sm">
-                <span>{challenge.difficulty?.toUpperCase() || 'OPEN'}</span>
-                <span>{challenge.xp_reward ?? challenge.xp_reward_per_word ?? challenge.xp_reward_per_match ?? 0} XP</span>
-              </div>
-            </Card>
-          ))}
+                <div className="flex items-center justify-between text-surface-400 text-sm">
+                  <span>{challenge.difficulty?.toUpperCase() || 'OPEN'}</span>
+                  <span>{challenge.xp_reward ?? challenge.xp_reward_per_word ?? challenge.xp_reward_per_match ?? 0} XP</span>
+                </div>
+              </Card>
+            )
+          })}
         </div>
       </div>
     )
@@ -533,8 +608,13 @@ export default function BibleGameClient({ gameKey, config, challenges, items, ex
             </div>
             <h2 className="text-2xl font-semibold text-white mb-4">Challenge Complete</h2>
             <p className="text-amber-300 text-lg mb-3">{score} / {currentItems.length} correct</p>
+            {playedChallenges.has(currentChallengeId!) && (
+              <p className="text-sm text-emerald-400 mb-3">✓ Come back tomorrow for another attempt!</p>
+            )}
             <div className="flex flex-wrap gap-3">
-              <Button onClick={() => startChallenge(currentChallengeId!)}>Try Again</Button>
+              {!playedChallenges.has(currentChallengeId!) && (
+                <Button onClick={() => startChallenge(currentChallengeId!)}>Try Again</Button>
+              )}
               <Button variant="outline" onClick={goToNextChallenge}>{nextChallenge ? 'Next challenge' : 'Back to challenges'}</Button>
             </div>
           </Card>
@@ -592,9 +672,16 @@ export default function BibleGameClient({ gameKey, config, challenges, items, ex
           }}>
             {currentQuestionIndex < currentItems.length - 1 ? 'Next Verse' : 'Finish Challenge'}
           </Button>
-          <Button variant="outline" onClick={() => startChallenge(currentChallengeId!)}>
-            Restart
-          </Button>
+          {!playedChallenges.has(currentChallengeId!) && (
+            <Button variant="outline" onClick={() => startChallenge(currentChallengeId!)}>
+              Restart
+            </Button>
+          )}
+          {playedChallenges.has(currentChallengeId!) && (
+            <Button variant="outline" disabled>
+              Completed Today ✓
+            </Button>
+          )}
         </div>
 
         {showResults && (
@@ -605,7 +692,12 @@ export default function BibleGameClient({ gameKey, config, challenges, items, ex
             <h2 className="text-2xl font-semibold text-white mb-2">Memory challenge complete!</h2>
             <p className="text-surface-400">Well done reviewing this Scripture set.</p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <Button onClick={() => startChallenge(currentChallengeId!)}>Try Again</Button>
+              {!playedChallenges.has(currentChallengeId!) && (
+                <Button onClick={() => startChallenge(currentChallengeId!)}>Try Again</Button>
+              )}
+              {playedChallenges.has(currentChallengeId!) && (
+                <p className="text-sm text-emerald-400">✓ Come back tomorrow!</p>
+              )}
               <Button variant="outline" onClick={goToNextChallenge}>{nextChallenge ? 'Next challenge' : 'Back to challenges'}</Button>
             </div>
           </Card>
@@ -668,7 +760,12 @@ export default function BibleGameClient({ gameKey, config, challenges, items, ex
             <p className="text-amber-300 text-lg mb-3">{correctCount} / {currentItems.length} in correct position</p>
             <p className="text-surface-400">Review the order and try again to improve your score.</p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <Button onClick={() => startChallenge(currentChallengeId!)}>Try Again</Button>
+              {!playedChallenges.has(currentChallengeId!) && (
+                <Button onClick={() => startChallenge(currentChallengeId!)}>Try Again</Button>
+              )}
+              {playedChallenges.has(currentChallengeId!) && (
+                <p className="text-sm text-emerald-400">✓ Come back tomorrow!</p>
+              )}
               <Button variant="outline" onClick={goToNextChallenge}>{nextChallenge ? 'Next challenge' : 'Back to challenges'}</Button>
             </div>
           </Card>
@@ -753,7 +850,12 @@ export default function BibleGameClient({ gameKey, config, challenges, items, ex
             <p className="text-amber-300 text-lg mb-3">{towerScore} correct answers in {currentItems.length} floors</p>
             <p className="text-surface-400">Keep climbing to sharpen your Bible knowledge.</p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <Button onClick={() => startChallenge(currentChallengeId!)}>Retry Tower</Button>
+              {!playedChallenges.has(currentChallengeId!) && (
+                <Button onClick={() => startChallenge(currentChallengeId!)}>Retry Tower</Button>
+              )}
+              {playedChallenges.has(currentChallengeId!) && (
+                <p className="text-sm text-emerald-400">✓ Come back tomorrow!</p>
+              )}
               <Button variant="outline" onClick={goToNextChallenge}>{nextChallenge ? 'Next challenge' : 'Back to challenges'}</Button>
             </div>
           </Card>
@@ -834,7 +936,12 @@ export default function BibleGameClient({ gameKey, config, challenges, items, ex
             <h2 className="text-2xl font-semibold text-white mb-2">Bible Bee complete!</h2>
             <p className="text-amber-300 text-lg mb-3">{score} / {currentItems.length} correct</p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <Button onClick={() => startChallenge(currentChallengeId!)}>Try Again</Button>
+              {!playedChallenges.has(currentChallengeId!) && (
+                <Button onClick={() => startChallenge(currentChallengeId!)}>Try Again</Button>
+              )}
+              {playedChallenges.has(currentChallengeId!) && (
+                <p className="text-sm text-emerald-400">✓ Come back tomorrow!</p>
+              )}
               <Button variant="outline" onClick={goToNextChallenge}>{nextChallenge ? 'Next challenge' : 'Back to challenges'}</Button>
             </div>
           </Card>

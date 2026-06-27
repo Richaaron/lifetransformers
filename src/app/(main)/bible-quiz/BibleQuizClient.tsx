@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Trophy, BookOpen, ChevronRight, Clock } from 'lucide-react';
 import { playCorrectSound, playIncorrectSound, playGameCompleteSound } from '@/lib/sounds';
+import { hasPlayedToday, recordGamePlay } from '@/lib/game-session-utils';
 
 interface BibleQuiz {
   id: string;
@@ -35,6 +36,42 @@ interface BibleQuizClientProps {
 export default function BibleQuizClient({ initialQuizzes, initialQuestions }: BibleQuizClientProps) {
   const isNative = useIsNative();
   const supabase = createClient();
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  useEffect(() => {
+    async function fetchUser() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        setCurrentUser(user);
+        
+        // Load played quizzes for today - don't block UI
+        if (user) {
+          try {
+            const played = new Set<string>();
+            for (const quiz of initialQuizzes) {
+              try {
+                const hasPlayed = await hasPlayedToday(user.id, 'bible_quiz', quiz.id);
+                if (hasPlayed) {
+                  played.add(quiz.id);
+                }
+              } catch (error) {
+                console.error('Error checking play status for quiz:', quiz.id, error);
+                // Continue checking other quizzes even if one fails
+              }
+            }
+            setPlayedToday(played);
+          } catch (error) {
+            console.error('Error loading played quizzes:', error);
+            // Don't block UI on error - user can still see and play quizzes
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user:', error);
+      }
+    }
+    fetchUser();
+    // Note: supabase not in deps - createClient is called in component, don't want effect re-running on every render
+  }, [initialQuizzes]);
 
   const [currentQuizId, setCurrentQuizId] = useState<string | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -44,6 +81,7 @@ export default function BibleQuizClient({ initialQuizzes, initialQuestions }: Bi
   const [loading, setLoading] = useState(false);
   const [timeLeft, setTimeLeft] = useState(15);
   const [questionAnswers, setQuestionAnswers] = useState<Record<string, string[]>>({});
+  const [playedToday, setPlayedToday] = useState<Set<string>>(new Set());
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentQuiz = initialQuizzes.find((q) => q.id === currentQuizId);
@@ -100,7 +138,13 @@ export default function BibleQuizClient({ initialQuizzes, initialQuestions }: Bi
     }
   }, [timeLeft, currentQuizId, showResults, loading]);
 
-  function startQuiz(quizId: string) {
+  async function startQuiz(quizId: string) {
+    const alreadyPlayed = await hasPlayedToday(currentUser?.id || '', 'bible_quiz', quizId);
+    if (alreadyPlayed) {
+      alert('You have already completed this quiz today! Come back tomorrow for another attempt.');
+      return;
+    }
+    
     setCurrentQuizId(quizId);
     setCurrentQuestionIndex(0);
     setScore(0);
@@ -148,6 +192,10 @@ export default function BibleQuizClient({ initialQuizzes, initialQuestions }: Bi
         total_questions: totalQuestions,
       });
 
+      // Record the play to enforce daily limit
+      await recordGamePlay(user.id, 'bible_quiz', currentQuiz.id);
+      setPlayedToday(prev => new Set(prev).add(currentQuiz.id));
+
       // Award XP if score > 0
       if (score > 0) {
         await supabase.rpc('add_xp', {
@@ -179,33 +227,44 @@ export default function BibleQuizClient({ initialQuizzes, initialQuestions }: Bi
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {initialQuizzes.map((quiz) => (
-            <Card
-              key={quiz.id}
-              className="p-5 cursor-pointer hover:border-amber-500/50 transition-all group"
-              onClick={() => startQuiz(quiz.id)}
-            >
-              <div className="flex items-start justify-between mb-3">
-                <BookOpen className="w-8 h-8 text-amber-500" />
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                  quiz.difficulty === 'easy' ? 'bg-emerald-500/20 text-emerald-400' :
-                  quiz.difficulty === 'medium' ? 'bg-amber-500/20 text-amber-400' :
-                  'bg-red-500/20 text-red-400'
-                }`}>
-                  {quiz.difficulty.toUpperCase()}
-                </span>
-              </div>
-              <h3 className="text-xl font-semibold text-white mb-2">{quiz.title}</h3>
-              <p className="text-surface-400 text-sm mb-4">{quiz.description}</p>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-amber-400">
-                  <Trophy className="w-4 h-4" />
-                  <span className="font-semibold">{quiz.xp_reward} XP</span>
+          {initialQuizzes.map((quiz) => {
+            const isCompleted = playedToday.has(quiz.id);
+            return (
+              <Card
+                key={quiz.id}
+                className={`p-5 ${isCompleted ? 'cursor-default opacity-60' : 'cursor-pointer hover:border-amber-500/50'} transition-all group`}
+                onClick={() => !isCompleted && startQuiz(quiz.id)}
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <BookOpen className="w-8 h-8 text-amber-500" />
+                  <div className="flex items-center gap-2">
+                    {isCompleted && (
+                      <span className="px-2 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-400">
+                        ✓ Completed
+                      </span>
+                    )}
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                      quiz.difficulty === 'easy' ? 'bg-emerald-500/20 text-emerald-400' :
+                      quiz.difficulty === 'medium' ? 'bg-amber-500/20 text-amber-400' :
+                      'bg-red-500/20 text-red-400'
+                    }`}>
+                      {quiz.difficulty.toUpperCase()}
+                    </span>
+                  </div>
                 </div>
-                <ChevronRight className="w-5 h-5 text-surface-400 group-hover:text-amber-500 group-hover:translate-x-1 transition-all" />
-              </div>
-            </Card>
-          ))}
+                <h3 className="text-xl font-semibold text-white mb-2">{quiz.title}</h3>
+                <p className="text-surface-400 text-sm mb-4">{quiz.description}</p>
+                {isCompleted && <p className="text-sm text-emerald-400 mb-3">Come back tomorrow to play again!</p>}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-amber-400">
+                    <Trophy className="w-4 h-4" />
+                    <span className="font-semibold">{quiz.xp_reward} XP</span>
+                  </div>
+                  {!isCompleted && <ChevronRight className="w-5 h-5 text-surface-400 group-hover:text-amber-500 group-hover:translate-x-1 transition-all" />}
+                </div>
+              </Card>
+            );
+          })}
         </div>
       </div>
     );
@@ -283,7 +342,9 @@ export default function BibleQuizClient({ initialQuizzes, initialQuestions }: Bi
             <Button onClick={() => setCurrentQuizId(null)} variant="outline">
               Back to Quizzes
             </Button>
-            <Button onClick={() => startQuiz(currentQuizId!)}>Try Again</Button>
+            {!playedToday.has(currentQuizId!) && (
+              <Button onClick={() => startQuiz(currentQuizId!)}>Try Again</Button>
+            )}
           </div>
         </div>
       )}
