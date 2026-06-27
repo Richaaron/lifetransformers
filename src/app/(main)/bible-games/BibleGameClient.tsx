@@ -42,6 +42,17 @@ function normalizeText(value: string) {
   return value.trim().toLowerCase()
 }
 
+function buildQuestionAnswers(question: any) {
+  if (!question) return []
+
+  const answers = [
+    question.correct_speaker || question.correct_story || question.correct_reference || question.character2 || question.correct_answer,
+    ...(question.wrong_speakers || question.wrong_stories || question.wrong_references || question.wrong_character2 || question.wrong_answers || []),
+  ]
+
+  return shuffleArray(answers)
+}
+
 export default function BibleGameClient({ gameKey, config, challenges, items, extraItems = [] }: BibleGameClientProps) {
   const isNative = useIsNative()
   const supabase = createClient()
@@ -74,17 +85,6 @@ export default function BibleGameClient({ gameKey, config, challenges, items, ex
 
   const currentQuestion = currentItems[currentQuestionIndex]
 
-  const currentQuestionAnswers = useMemo(() => {
-    if (!currentQuestion) return []
-
-    const answers = [
-      currentQuestion.correct_speaker || currentQuestion.correct_story || currentQuestion.correct_reference || currentQuestion.character2 || currentQuestion.correct_answer,
-      ...(currentQuestion.wrong_speakers || currentQuestion.wrong_stories || currentQuestion.wrong_references || currentQuestion.wrong_character2 || currentQuestion.wrong_answers || []),
-    ]
-
-    return shuffleArray(answers)
-  }, [currentQuestion, currentQuestionIndex, gameKey, currentChallengeId])
-
   const currentTowerFloor = currentItems[towerFloorIndex]
   const currentTowerQuestions = useMemo(() => {
     if (gameKey !== 'bible-trivia-tower' || !currentTowerFloor) return []
@@ -92,6 +92,29 @@ export default function BibleGameClient({ gameKey, config, challenges, items, ex
       .filter((question) => question.floor_id === currentTowerFloor.id)
       .sort((a, b) => a.order_index - b.order_index)
   }, [extraItems, currentTowerFloor, gameKey])
+
+  const currentTowerQuestion = currentTowerQuestions[towerQuestionIndex]
+  const activeQuestionForAnswers = gameKey === 'bible-trivia-tower' ? currentTowerQuestion : currentQuestion
+
+  const activeQuestionAnswerKey = useMemo(() => {
+    if (!activeQuestionForAnswers) return ''
+
+    const identity = activeQuestionForAnswers.id
+      || activeQuestionForAnswers.correct_speaker
+      || activeQuestionForAnswers.correct_story
+      || activeQuestionForAnswers.correct_reference
+      || activeQuestionForAnswers.character2
+      || activeQuestionForAnswers.correct_answer
+      || activeQuestionForAnswers.quote
+      || activeQuestionForAnswers.description
+      || ''
+
+    return `${gameKey}:${currentChallengeId ?? 'none'}:${gameKey === 'bible-trivia-tower' ? towerFloorIndex : currentQuestionIndex}:${identity}`
+  }, [activeQuestionForAnswers, currentChallengeId, currentQuestionIndex, gameKey, towerFloorIndex])
+
+  const currentQuestionAnswers = useMemo(() => {
+    return buildQuestionAnswers(activeQuestionForAnswers)
+  }, [activeQuestionAnswerKey])
 
   useEffect(() => {
     if (gameKey !== 'bible-bookshelf' || !currentChallengeId) return
