@@ -21,12 +21,12 @@ export function SuggestedUsersWidget() {
       // Get current friends/follows
       const { data: friends } = await supabase
         .from("friendships")
-        .select("user_id1, user_id2")
-        .or(`user_id1.eq.${user.id},user_id2.eq.${user.id}`)
+        .select("user_id, friend_id")
+        .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`)
 
       const friendIds = new Set<string>()
       friends?.forEach(f => {
-        friendIds.add(f.user_id1 === user.id ? f.user_id2 : f.user_id1)
+        friendIds.add(f.user_id === user.id ? f.friend_id : f.user_id)
       })
 
       // Fetch users who are not friends
@@ -58,8 +58,8 @@ export function SuggestedUsersWidget() {
 
     // Create friendship
     await supabase.from("friendships").insert({
-      user_id1: user.id,
-      user_id2: targetId,
+      user_id: user.id,
+      friend_id: targetId,
       status: "accepted" // Auto accept for simplicity in this version
     })
   }
