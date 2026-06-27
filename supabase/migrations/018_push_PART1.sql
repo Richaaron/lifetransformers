@@ -1,8 +1,7 @@
-﻿-- BIBLE GAMES MIGRATION
--- Run Part 1 (tables + RLS), then Parts 2-6 (seed data) separately
+-- PART 1: Tables + RLS (safe to re-run)
+-- Run this first, then Part 2
 
--- PART 1: TABLES + RLS POLICIES
-
+-- 1. VERSE MEMORY
 create table if not exists verse_memory_challenges (
   id uuid default gen_random_uuid() primary key,
   title text not null,
@@ -30,6 +29,7 @@ create table if not exists verse_memory_attempts (
   completed_at timestamptz default now() not null
 );
 
+-- 2. WHO SAID IT
 create table if not exists who_said_it_quizzes (
   id uuid default gen_random_uuid() primary key,
   title text not null,
@@ -58,6 +58,7 @@ create table if not exists who_said_it_attempts (
   completed_at timestamptz default now() not null
 );
 
+-- 3. BOOKSHELF
 create table if not exists bookshelf_challenges (
   id uuid default gen_random_uuid() primary key,
   title text not null,
@@ -82,6 +83,7 @@ create table if not exists bookshelf_attempts (
   completed_at timestamptz default now() not null
 );
 
+-- 4. STORY QUIZ
 create table if not exists story_quizzes (
   id uuid default gen_random_uuid() primary key,
   title text not null,
@@ -111,6 +113,7 @@ create table if not exists story_attempts (
   completed_at timestamptz default now() not null
 );
 
+-- 5. TRIVIA TOWER
 create table if not exists trivia_towers (
   id uuid default gen_random_uuid() primary key,
   title text not null,
@@ -148,6 +151,7 @@ create table if not exists trivia_tower_attempts (
   completed_at timestamptz default now() not null
 );
 
+-- 6. BIBLE BEE
 create table if not exists bible_bee_challenges (
   id uuid default gen_random_uuid() primary key,
   title text not null,
@@ -173,6 +177,7 @@ create table if not exists bible_bee_attempts (
   completed_at timestamptz default now() not null
 );
 
+-- 7. FAMILY TREE
 create table if not exists family_tree_challenges (
   id uuid default gen_random_uuid() primary key,
   title text not null,
@@ -200,6 +205,7 @@ create table if not exists family_tree_attempts (
   completed_at timestamptz default now() not null
 );
 
+-- 8. PROMISE MATCH
 create table if not exists promise_match_challenges (
   id uuid default gen_random_uuid() primary key,
   title text not null,
@@ -254,43 +260,111 @@ alter table promise_match_challenges enable row level security;
 alter table promise_match_pairs enable row level security;
 alter table promise_match_attempts enable row level security;
 
-create policy "Everyone can view challenges" on verse_memory_challenges for select using (true);
-create policy "Everyone can view questions" on verse_memory_questions for select using (true);
-create policy "Users can insert own attempts" on verse_memory_attempts for insert with check (auth.uid() = user_id);
-create policy "Users can view own attempts" on verse_memory_attempts for select using (auth.uid() = user_id);
+do $$ begin
+  create policy "Everyone can view vm challenges" on verse_memory_challenges for select using (true);
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy "Everyone can view vm questions" on verse_memory_questions for select using (true);
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy "Users can insert own vm attempts" on verse_memory_attempts for insert with check (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy "Users can view own vm attempts" on verse_memory_attempts for select using (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
 
-create policy "Everyone can view quizzes" on who_said_it_quizzes for select using (true);
-create policy "Everyone can view wsquestions" on who_said_it_questions for select using (true);
-create policy "Users can insert own wsattempts" on who_said_it_attempts for insert with check (auth.uid() = user_id);
-create policy "Users can view own wsattempts" on who_said_it_attempts for select using (auth.uid() = user_id);
+do $$ begin
+  create policy "Everyone can view wsi quizzes" on who_said_it_quizzes for select using (true);
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy "Everyone can view wsi questions" on who_said_it_questions for select using (true);
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy "Users can insert own wsi attempts" on who_said_it_attempts for insert with check (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy "Users can view own wsi attempts" on who_said_it_attempts for select using (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
 
-create policy "Everyone can view bchallenges" on bookshelf_challenges for select using (true);
-create policy "Everyone can view bbooks" on bookshelf_books for select using (true);
-create policy "Users can insert own battempts" on bookshelf_attempts for insert with check (auth.uid() = user_id);
-create policy "Users can view own battempts" on bookshelf_attempts for select using (auth.uid() = user_id);
+do $$ begin
+  create policy "Everyone can view bs challenges" on bookshelf_challenges for select using (true);
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy "Everyone can view bs books" on bookshelf_books for select using (true);
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy "Users can insert own bs attempts" on bookshelf_attempts for insert with check (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy "Users can view own bs attempts" on bookshelf_attempts for select using (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
 
-create policy "Everyone can view squizzes" on story_quizzes for select using (true);
-create policy "Everyone can view squestions" on story_questions for select using (true);
-create policy "Users can insert own sattempts" on story_attempts for insert with check (auth.uid() = user_id);
-create policy "Users can view own sattempts" on story_attempts for select using (auth.uid() = user_id);
+do $$ begin
+  create policy "Everyone can view sq quizzes" on story_quizzes for select using (true);
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy "Everyone can view sq questions" on story_questions for select using (true);
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy "Users can insert own sq attempts" on story_attempts for insert with check (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy "Users can view own sq attempts" on story_attempts for select using (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
 
-create policy "Everyone can view towers" on trivia_towers for select using (true);
-create policy "Everyone can view floors" on trivia_floors for select using (true);
-create policy "Everyone can view floorquestions" on trivia_floor_questions for select using (true);
-create policy "Users can insert own ttattempts" on trivia_tower_attempts for insert with check (auth.uid() = user_id);
-create policy "Users can view own ttattempts" on trivia_tower_attempts for select using (auth.uid() = user_id);
+do $$ begin
+  create policy "Everyone can view tt towers" on trivia_towers for select using (true);
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy "Everyone can view tt floors" on trivia_floors for select using (true);
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy "Everyone can view tt fquestions" on trivia_floor_questions for select using (true);
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy "Users can insert own tt attempts" on trivia_tower_attempts for insert with check (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy "Users can view own tt attempts" on trivia_tower_attempts for select using (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
 
-create policy "Everyone can view bchallenges2" on bible_bee_challenges for select using (true);
-create policy "Everyone can view bwords" on bible_bee_words for select using (true);
-create policy "Users can insert own beattempts" on bible_bee_attempts for insert with check (auth.uid() = user_id);
-create policy "Users can view own beattempts" on bible_bee_attempts for select using (auth.uid() = user_id);
+do $$ begin
+  create policy "Everyone can view bb challenges" on bible_bee_challenges for select using (true);
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy "Everyone can view bb words" on bible_bee_words for select using (true);
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy "Users can insert own bb attempts" on bible_bee_attempts for insert with check (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy "Users can view own bb attempts" on bible_bee_attempts for select using (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
 
-create policy "Everyone can view ftchallenges" on family_tree_challenges for select using (true);
-create policy "Everyone can view ftconnections" on family_tree_connections for select using (true);
-create policy "Users can insert own ftattempts" on family_tree_attempts for insert with check (auth.uid() = user_id);
-create policy "Users can view own ftattempts" on family_tree_attempts for select using (auth.uid() = user_id);
+do $$ begin
+  create policy "Everyone can view ft challenges" on family_tree_challenges for select using (true);
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy "Everyone can view ft connections" on family_tree_connections for select using (true);
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy "Users can insert own ft attempts" on family_tree_attempts for insert with check (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy "Users can view own ft attempts" on family_tree_attempts for select using (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
 
-create policy "Everyone can view pmchallenges" on promise_match_challenges for select using (true);
-create policy "Everyone can view pmpairs" on promise_match_pairs for select using (true);
-create policy "Users can insert own pmattempts" on promise_match_attempts for insert with check (auth.uid() = user_id);
-create policy "Users can view own pmattempts" on promise_match_attempts for select using (auth.uid() = user_id);
+do $$ begin
+  create policy "Everyone can view pm challenges" on promise_match_challenges for select using (true);
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy "Everyone can view pm pairs" on promise_match_pairs for select using (true);
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy "Users can insert own pm attempts" on promise_match_attempts for insert with check (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy "Users can view own pm attempts" on promise_match_attempts for select using (auth.uid() = user_id);
+exception when duplicate_object then null; end $$;
+
+-- DONE. Now run Part 2 for seed data.
